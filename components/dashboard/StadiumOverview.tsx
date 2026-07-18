@@ -9,6 +9,7 @@ import GateStatus from './GateStatus';
 import WeatherWidget from './WeatherWidget';
 import SustainabilityWidget from './SustainabilityWidget';
 import TransitBoard from './TransitBoard';
+import PredictiveAnalytics from './PredictiveAnalytics';
 
 /**
  * StadiumOverview Dashboard Component.
@@ -175,7 +176,7 @@ export default function StadiumOverview(): React.JSX.Element {
               {Math.round(stadiumState.weather.temperature)}°F
             </div>
             <span className="text-[10px] capitalize text-white/60">
-              {stadiumState.weather.condition.replace('_', ' ')}
+              {stadiumState.weather.condition.replaceAll('_', ' ')}
             </span>
           </div>
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
@@ -220,6 +221,7 @@ export default function StadiumOverview(): React.JSX.Element {
         <div className="space-y-6">
           <SustainabilityWidget stadiumState={stadiumState} />
           <WeatherWidget />
+          <PredictiveAnalytics />
 
           {/* Interactive map prompt */}
           <div className="bg-gradient-to-b from-blue-950/40 to-[#0A0E27] backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center space-y-4 flex flex-col justify-center items-center h-[300px]">

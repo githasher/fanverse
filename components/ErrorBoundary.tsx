@@ -5,8 +5,9 @@
 
 'use client';
 
-import React, { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface Props {
   children?: ReactNode;
@@ -27,16 +28,20 @@ export default class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error in Dashboard boundary:', error, errorInfo);
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    logger.error('ErrorBoundaryBoundary', { error, errorInfo });
   }
 
-  private handleReset = () => {
+  private handleReset = (): void => {
     this.setState({ hasError: false, error: null });
     window.location.reload();
   };
 
-  public render() {
+  private handleRecover = (): void => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  public render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-[#0A0E27] flex flex-col justify-center items-center p-6 text-center select-none font-[family-name:var(--font-inter)]">
@@ -58,13 +63,23 @@ export default class ErrorBoundary extends Component<Props, State> {
               </div>
             )}
 
-            <button
-              onClick={this.handleReset}
-              className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-[#0A0E27] font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-98"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Reload Application</span>
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={this.handleRecover}
+                className="flex-1 py-3 bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-98"
+                aria-label="Attempt to recover dashboard locally without full page reload"
+              >
+                <span>Try Recovering</span>
+              </button>
+              <button
+                onClick={this.handleReset}
+                className="flex-1 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-[#0A0E27] font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-98"
+                aria-label="Reload application page"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Reload Application</span>
+              </button>
+            </div>
           </div>
         </div>
       );

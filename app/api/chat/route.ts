@@ -1,36 +1,71 @@
 import { NextResponse } from 'next/server';
 import { getSmartResponse } from '@/lib/gemini';
-import { validateChatRequest } from '@/lib/validation';
+import { validateChatRequest, validateChatHistory, sanitizeInput } from '@/lib/validation';
+import { checkRateLimit, getClientIp, CHAT_RATE_LIMIT } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 /**
  * Handles incoming chat messages from the user dashboard.
- * Merges match-day stadium sensory context, maps chat history,
- * and executes Gemini 3.5 Flash queries.
+ * Applies rate limiting, input validation, XSS sanitization, and
+ * executes Gemini AI queries with full stadium context.
  *
  * @param req Incoming HTTP Request containing message, stadiumState, userProfile, and history.
- * @returns Promise<NextResponse> containing the AI response text or validation error.
+ * @returns Promise<NextResponse> containing the AI response text or error.
  */
 export async function POST(req: Request): Promise<NextResponse> {
   try {
+    // Rate limiting check
+    const clientIp = getClientIp(req);
+    const rateCheck = checkRateLimit(`chat:${clientIp}`, CHAT_RATE_LIMIT);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait before sending another message.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(rateCheck.retryAfterMs / 1000)),
+            'X-RateLimit-Remaining': String(rateCheck.remaining),
+          },
+        }
+      );
+    }
+
     const body = await req.json();
     const { message, stadiumState, userProfile, history } = body;
 
+    // Validate primary fields
     const validation = validateChatRequest(message, stadiumState, userProfile);
     if (!validation.isValid) {
       return NextResponse.json(
-        { error: validation.error || 'Bad Request' },
+        { error: validation.error ?? 'Bad Request' },
         { status: 400 }
       );
     }
 
-    const responseText = await getSmartResponse(message, stadiumState, userProfile, history || []);
+    // Validate history array
+    const historyValidation = validateChatHistory(history);
+    if (!historyValidation.isValid) {
+      return NextResponse.json(
+        { error: historyValidation.error ?? 'Invalid history format' },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize user message
+    const sanitizedMessage = sanitizeInput(message);
+
+    const responseText = await getSmartResponse(
+      sanitizedMessage,
+      stadiumState,
+      userProfile,
+      history ?? []
+    );
 
     return NextResponse.json({ response: responseText });
   } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error('Chat API route error:', error);
+    logger.error('ChatAPI', error);
     return NextResponse.json(
-      { error: errorMsg || 'Internal Server Error' },
+      { error: 'Internal Server Error' },
       { status: 500 }
     );
   }

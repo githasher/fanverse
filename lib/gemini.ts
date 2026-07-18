@@ -5,12 +5,21 @@
 
 import { GoogleGenAI, type Chat } from '@google/genai';
 import type { StadiumState, UserProfile, TicketInfo, ChatMessage } from '@/types';
+import { env } from './env';
+import { logger } from './logger';
+import {
+  MODEL_ID,
+  AI_TEMPERATURE,
+  AI_TOP_P,
+  AI_TOP_K,
+  AI_MAX_OUTPUT_TOKENS,
+  SHORT_QUEUE_THRESHOLD_MINUTES,
+  CONTEXT_SUMMARY_TOP_ZONES,
+  CONTEXT_SUMMARY_TOP_FACILITIES,
+  CONTEXT_SUMMARY_TOP_FOOD,
+  STADIUM_CAPACITY,
+} from './constants';
 
-// -----------------------------------------------------------------------------
-// Initialise the Gemini client
-// -----------------------------------------------------------------------------
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 let cachedClient: GoogleGenAI | null = null;
 
 /**
@@ -20,18 +29,11 @@ let cachedClient: GoogleGenAI | null = null;
  * @returns GoogleGenAI client instance.
  */
 function getClient(): GoogleGenAI {
-  if (!GEMINI_API_KEY) {
-    throw new Error(
-      'GEMINI_API_KEY is not set. Add it to .env.local or your environment.'
-    );
-  }
   if (!cachedClient) {
-    cachedClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    cachedClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
   }
   return cachedClient;
 }
-
-const MODEL_ID = 'gemini-3.5-flash';
 
 // -----------------------------------------------------------------------------
 // System prompt — defines FANVERSE AI's personality and capabilities
@@ -74,7 +76,7 @@ Depending on the user's active role, your personality and assistance focus shift
 - When giving directions, reference gate names, section letters, and level numbers
 
 ## Important Notes
-- MetLife Stadium capacity: 82,500
+- MetLife Stadium capacity: ${STADIUM_CAPACITY}
 - The stadium is open-air (no roof) — weather matters!
 - NJ Transit Meadowlands Rail is the primary public transport
 - The stadium has 3 levels: 100 (Lower), 200 (Mezzanine), 300 (Upper)
@@ -88,6 +90,8 @@ Depending on the user's active role, your personality and assistance focus shift
 /**
  * Creates a new Gemini chat session pre-loaded with the FANVERSE AI system prompt.
  * Use this for multi-turn conversations in the chat UI.
+ *
+ * @returns Promise resolving to a Gemini Chat session.
  */
 export async function createFanverseChat(): Promise<Chat> {
   const client = getClient();
@@ -96,10 +100,10 @@ export async function createFanverseChat(): Promise<Chat> {
     model: MODEL_ID,
     config: {
       systemInstruction: SYSTEM_PROMPT,
-      temperature: 0.8,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 1024,
+      temperature: AI_TEMPERATURE,
+      topP: AI_TOP_P,
+      topK: AI_TOP_K,
+      maxOutputTokens: AI_MAX_OUTPUT_TOKENS,
     },
     history: [
       {
@@ -127,6 +131,9 @@ export async function createFanverseChat(): Promise<Chat> {
 /**
  * Analyses a ticket image using Gemini Vision and extracts structured seat info.
  * Returns a TicketInfo object parsed from the model's JSON response.
+ *
+ * @param imageBase64 The base64 string of the ticket.
+ * @returns Promise resolving to TicketInfo.
  */
 export async function analyzeTicket(imageBase64: string): Promise<TicketInfo> {
   const client = getClient();
@@ -167,14 +174,13 @@ Respond ONLY with the JSON object, no markdown fences, no explanation.`;
   });
 
   const text = response.text?.trim() ?? '';
-
-  // Strip any accidental markdown fences
   const jsonStr = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
 
   try {
     const parsed: TicketInfo = JSON.parse(jsonStr);
     return parsed;
-  } catch {
+  } catch (err: unknown) {
+    logger.error('AnalyzeTicketOCR', err);
     // Fallback: return a default ticket if parsing fails
     return {
       matchId: 'UNKNOWN',
@@ -196,6 +202,12 @@ Respond ONLY with the JSON object, no markdown fences, no explanation.`;
 /**
  * Sends a user message along with full stadium context to Gemini and returns
  * an intelligent, contextual response.
+ *
+ * @param userMessage Message content from user.
+ * @param stadiumState Current sensory telemetry of stadium.
+ * @param userProfile Details about active user profile.
+ * @param history Recent conversation logs.
+ * @returns Promise resolving to response text.
  */
 export async function getSmartResponse(
   userMessage: string,
@@ -204,8 +216,6 @@ export async function getSmartResponse(
   history: ChatMessage[] = []
 ): Promise<string> {
   const client = getClient();
-
-  // Build a compact context summary to keep token usage reasonable
   const contextSummary = buildContextSummary(stadiumState);
 
   const systemInstruction = `${SYSTEM_PROMPT}
@@ -225,11 +235,8 @@ ${contextSummary}
 
 Respond helpfully and concisely in the user's preferred language. Use the live data above to give specific, actionable advice.`;
 
-  // Format history messages to match content objects format if they don't already
   const formattedHistory = history.map((msg: ChatMessage) => {
     const role = msg.role === 'user' ? 'user' : 'model';
-    
-    // Support pre-formatted inputs from client payload if structure matches
     const rawMsg = msg as unknown as { parts?: Array<{ text?: string }> };
     if (rawMsg.parts && Array.isArray(rawMsg.parts)) {
       return {
@@ -237,7 +244,6 @@ Respond helpfully and concisely in the user's preferred language. Use the live d
         parts: rawMsg.parts.map((p) => ({ text: p.text || '' })),
       };
     }
-    
     return {
       role,
       parts: [{ text: msg.content || '' }],
@@ -255,14 +261,77 @@ Respond helpfully and concisely in the user's preferred language. Use the live d
     ],
     config: {
       systemInstruction,
-      temperature: 0.8,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 1024,
+      temperature: AI_TEMPERATURE,
+      topP: AI_TOP_P,
+      topK: AI_TOP_K,
+      maxOutputTokens: AI_MAX_OUTPUT_TOKENS,
     },
   });
 
   return response.text?.trim() ?? 'I apologise — I wasn\'t able to generate a response. Please try again.';
+}
+
+// -----------------------------------------------------------------------------
+// Context Builders (Helper functions split to maintain <30 lines rule)
+// -----------------------------------------------------------------------------
+
+/** Builds the gate details log */
+function buildGatesSummary(gates: StadiumState['gates']): string {
+  return gates
+    .map(
+      (g) =>
+        `${g.name}: ${g.status.toUpperCase()}, crowd ${Math.round(g.crowdLevel * 100)}%, wait ${g.waitMinutes} min${g.accessibleEntry ? ' ♿' : ''}`
+    )
+    .join('\n');
+}
+
+/** Builds the busiest zones log */
+function buildZonesSummary(zones: StadiumState['zones']): string {
+  const sortedZones = [...zones].sort((a, b) => b.crowdDensity - a.crowdDensity);
+  return sortedZones
+    .slice(0, CONTEXT_SUMMARY_TOP_ZONES)
+    .map((z) => `${z.name}: ${Math.round(z.crowdDensity * 100)}% density, ${z.temperature}°F`)
+    .join('\n');
+}
+
+/** Builds the busiest facilities log */
+function buildFacilitiesSummary(facilities: StadiumState['facilities']): string {
+  const busyFacilities = facilities
+    .filter((f) => f.waitMinutes > SHORT_QUEUE_THRESHOLD_MINUTES)
+    .sort((a, b) => b.waitMinutes - a.waitMinutes);
+
+  return busyFacilities
+    .slice(0, CONTEXT_SUMMARY_TOP_FACILITIES)
+    .map((f) => `${f.name} (${f.type}): ${f.queueLength} people, ~${f.waitMinutes} min wait`)
+    .join('\n');
+}
+
+/** Builds the recommended food vendors log */
+function buildFoodSummary(foodVendors: StadiumState['foodVendors']): string {
+  const sortedFood = [...foodVendors].sort((a, b) => a.waitMinutes - b.waitMinutes);
+  return sortedFood
+    .slice(0, CONTEXT_SUMMARY_TOP_FOOD)
+    .map(
+      (v) =>
+        `${v.name} (${v.cuisine}): ${v.waitMinutes} min wait, $${v.priceRange.min}-$${v.priceRange.max}${v.dietaryTags.length ? ` [${v.dietaryTags.join(', ')}]` : ''}`
+    )
+    .join('\n');
+}
+
+/** Builds the weather description log */
+function buildWeatherSummary(weather: StadiumState['weather']): string {
+  const condText = weather.condition.replace(/_/g, ' ');
+  return `${weather.temperature}°F (feels ${weather.feelsLike}°F), ${condText}, humidity ${weather.humidity}%, wind ${weather.windSpeed} mph ${weather.windDirection}, UV ${weather.uvIndex}, rain chance ${weather.precipitation}%`;
+}
+
+/** Builds the transport status log */
+function buildTransportSummary(transport: StadiumState['transport']): string {
+  return [
+    `Metro: ${transport.metro.status}, ~${transport.metro.estimatedWait} min wait`,
+    `Bus: ${transport.bus.status}, ~${transport.bus.estimatedWait} min wait`,
+    `Rideshare: ${transport.rideshare.status}, ~${transport.rideshare.estimatedWait} min, surge ${transport.rideshare.surgeMultiplier}x`,
+    `Parking: ${transport.parking.availableSpots.toLocaleString()}/${transport.parking.totalSpots.toLocaleString()} spots, shuttle ${transport.parking.shuttleWait} min`,
+  ].join('\n');
 }
 
 /**
@@ -273,53 +342,14 @@ Respond helpfully and concisely in the user's preferred language. Use the live d
  * @returns string formatted summary log.
  */
 function buildContextSummary(state: StadiumState): string {
-  const { gates, zones, facilities, foodVendors, weather, transport, phase } = state;
+  const gatesSummary = buildGatesSummary(state.gates);
+  const zonesSummary = buildZonesSummary(state.zones);
+  const busyFacilities = buildFacilitiesSummary(state.facilities);
+  const foodSummary = buildFoodSummary(state.foodVendors);
+  const weatherStr = buildWeatherSummary(state.weather);
+  const transportStr = buildTransportSummary(state.transport);
 
-  // Gates summary
-  const gatesSummary = gates
-    .map(
-      (g) =>
-        `${g.name}: ${g.status.toUpperCase()}, crowd ${Math.round(g.crowdLevel * 100)}%, wait ${g.waitMinutes} min${g.accessibleEntry ? ' ♿' : ''}`
-    )
-    .join('\n');
-
-  // Top 3 busiest zones
-  const sortedZones = [...zones].sort((a, b) => b.crowdDensity - a.crowdDensity);
-  const zonesSummary = sortedZones
-    .slice(0, 5)
-    .map((z) => `${z.name}: ${Math.round(z.crowdDensity * 100)}% density, ${z.temperature}°F`)
-    .join('\n');
-
-  // Facility queues — only show ones with notable waits
-  const busyFacilities = facilities
-    .filter((f) => f.waitMinutes > 3)
-    .sort((a, b) => b.waitMinutes - a.waitMinutes)
-    .slice(0, 8)
-    .map((f) => `${f.name} (${f.type}): ${f.queueLength} people, ~${f.waitMinutes} min wait`)
-    .join('\n');
-
-  // Food vendors — sorted by shortest queue
-  const sortedFood = [...foodVendors].sort((a, b) => a.waitMinutes - b.waitMinutes);
-  const foodSummary = sortedFood
-    .slice(0, 8)
-    .map(
-      (v) =>
-        `${v.name} (${v.cuisine}): ${v.waitMinutes} min wait, $${v.priceRange.min}-$${v.priceRange.max}${v.dietaryTags.length ? ` [${v.dietaryTags.join(', ')}]` : ''}`
-    )
-    .join('\n');
-
-  // Weather
-  const weatherStr = `${weather.temperature}°F (feels ${weather.feelsLike}°F), ${weather.condition.replace('_', ' ')}, humidity ${weather.humidity}%, wind ${weather.windSpeed} mph ${weather.windDirection}, UV ${weather.uvIndex}, rain chance ${weather.precipitation}%`;
-
-  // Transport
-  const transportStr = [
-    `Metro: ${transport.metro.status}, ~${transport.metro.estimatedWait} min wait`,
-    `Bus: ${transport.bus.status}, ~${transport.bus.estimatedWait} min wait`,
-    `Rideshare: ${transport.rideshare.status}, ~${transport.rideshare.estimatedWait} min, surge ${transport.rideshare.surgeMultiplier}x`,
-    `Parking: ${transport.parking.availableSpots.toLocaleString()}/${transport.parking.totalSpots.toLocaleString()} spots, shuttle ${transport.parking.shuttleWait} min`,
-  ].join('\n');
-
-  return `**Match Phase**: ${phase}
+  return `**Match Phase**: ${state.phase}
 **Time**: ${state.timestamp}
 
 ### Gates

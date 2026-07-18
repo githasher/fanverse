@@ -54,7 +54,7 @@ function WeatherWidget(): React.JSX.Element {
               {Math.round(weather.temperature)}°F
             </div>
             <span className="text-xs text-white/50 capitalize mt-1 block">
-              {weather.condition.replace('_', ' ')}
+              {weather.condition.replaceAll('_', ' ')}
             </span>
           </div>
         </div>

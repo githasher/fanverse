@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { Camera, Upload, AlertCircle, FileText, CheckCircle } from 'lucide-react';
 import type { TicketInfo, ChatMessage } from '@/types';
+import { logger } from '@/lib/logger';
 
 /** MetLife Mock Ticket specifications for hackathon demo runs */
 const MOCK_TICKET: TicketInfo = {
@@ -92,7 +93,7 @@ export default function TicketScanner() {
       addMessage(generateSuccessMessage(data.ticket));
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error('Scan processing error:', err);
+      logger.error('TicketScannerScan', err);
       setError(`Failed to extract ticket info: ${errorMsg || 'Vision limits exceeded'}. Using mock fallback.`);
       
       // Fallback ticket

@@ -96,7 +96,7 @@ function FanTimeline(): React.JSX.Element {
                 
                 {isCurrent && (
                   <div className="mt-3 text-[9px] uppercase tracking-wider text-cyan-400 font-extrabold flex items-center gap-1">
-                    <span>⚡ Current Phase: {currentPhase.replace('_', ' ')}</span>
+                    <span>⚡ Current Phase: {currentPhase.replaceAll('_', ' ')}</span>
                   </div>
                 )}
               </div>

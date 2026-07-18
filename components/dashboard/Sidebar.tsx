@@ -13,6 +13,7 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
 } from 'lucide-react';
 import { useState, useMemo, memo } from 'react';
 import { t } from '@/lib/i18n';
@@ -27,13 +28,13 @@ const navItemsDefinition = [
   { view: 'settings' as const, labelKey: 'navSettings' as const, Icon: Settings },
 ];
 
-const phaseLabels: Record<string, { label: string; color: string }> = {
+const phaseLabels = {
   BEFORE_MATCH: { label: 'Pre-Match', color: 'bg-blue-500' },
   ENTERING: { label: 'Entering', color: 'bg-amber-500' },
   INSIDE: { label: 'Inside', color: 'bg-emerald-500' },
   HALFTIME: { label: 'Halftime', color: 'bg-purple-500' },
   AFTER_MATCH: { label: 'Post-Match', color: 'bg-rose-500' },
-};
+} as const;
 
 /**
  * Sidebar Navigation Component.
@@ -49,6 +50,7 @@ function Sidebar(): React.JSX.Element {
   const currentPhase = useFanverseStore((s) => s.currentPhase);
   const userProfile = useFanverseStore((s) => s.userProfile);
   const updateUserProfile = useFanverseStore((s) => s.updateUserProfile);
+  const setShowEmergency = useFanverseStore((s) => s.setShowEmergency);
   const [collapsed, setCollapsed] = useState(false);
 
   const unreadCount = useMemo(() => {
@@ -94,7 +96,7 @@ function Sidebar(): React.JSX.Element {
       </div>
 
       {/* Nav Items */}
-      <nav className="flex-1 py-4 px-2 space-y-1">
+      <nav className="flex-1 py-4 px-2 space-y-1" role="navigation" aria-label="Main navigation">
         {navItemsDefinition.map((item) => {
           const isActive = activeView === item.view;
           return (
@@ -108,6 +110,8 @@ function Sidebar(): React.JSX.Element {
                   ? 'bg-cyan-400/10 text-cyan-400'
                   : 'text-white/50 hover:text-white/80 hover:bg-white/5'
               }`}
+              aria-label={t(item.labelKey, userProfile.language)}
+              aria-current={isActive ? 'page' : undefined}
             >
               {isActive && (
                 <motion.div
@@ -147,6 +151,20 @@ function Sidebar(): React.JSX.Element {
         })}
       </nav>
 
+      {/* Emergency SOS Button */}
+      <div className="px-3 pb-3">
+        <button
+          onClick={() => setShowEmergency(true)}
+          className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/15 hover:border-red-500/30 text-red-400 text-xs font-semibold active:scale-95 transition-all ${
+            collapsed ? 'p-2' : ''
+          }`}
+          aria-label="Open emergency SOS panel"
+        >
+          <AlertTriangle size={18} className="animate-pulse" />
+          {!collapsed && <span>Emergency SOS</span>}
+        </button>
+      </div>
+
       {/* Match Info */}
       <div className="px-3 pb-3">
         <AnimatePresence>
@@ -177,6 +195,7 @@ function Sidebar(): React.JSX.Element {
           whileTap={{ scale: 0.95 }}
           onClick={() => setActiveView('dashboard')}
           className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all"
+          aria-label="Notifications"
         >
           <div className="relative">
             <Bell size={18} />
@@ -218,6 +237,7 @@ function Sidebar(): React.JSX.Element {
               ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20'
               : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20'
           }`}
+          aria-label="Switch user role"
         >
           {collapsed ? (
             userProfile.role === 'staff' ? '🛠️' : '⚽'
@@ -230,7 +250,8 @@ function Sidebar(): React.JSX.Element {
       {/* Collapse Toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="border-t border-white/10 py-3 flex items-center justify-center text-white/30 hover:text-white/60 transition-colors"
+        className="border-t border-white/10 py-3 flex items-center justify-center text-white/30 hover:text-white/60 transition-colors w-full"
+        aria-label="Toggle sidebar"
       >
         {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
       </button>

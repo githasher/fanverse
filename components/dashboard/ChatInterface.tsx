@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { Send, Mic, MicOff, AlertCircle } from 'lucide-react';
 import type { ChatMessage } from '@/types';
+import { logger } from '@/lib/logger';
 
 interface WebSpeechRecognition {
   continuous: boolean;
@@ -58,12 +59,15 @@ export default function ChatInterface() {
         };
 
         rec.onresult = (event: { results: { [key: number]: { [key: number]: { transcript: string } } } }) => {
-          const transcript = event.results[0][0].transcript;
-          setInputValue(transcript);
+          const resultGroup = event.results[0];
+          const result = resultGroup ? resultGroup[0] : null;
+          if (result) {
+            setInputValue(result.transcript);
+          }
         };
 
         rec.onerror = (event: { error: string }) => {
-          console.error('Speech recognition error:', event.error);
+          logger.error('SpeechRecognition', event.error);
           setSpeechError(`Voice error: ${event.error}`);
           setIsListening(false);
         };
@@ -149,7 +153,7 @@ export default function ChatInterface() {
         addMessage(assistantMsg);
       } catch (err: unknown) {
         const errorMsgString = err instanceof Error ? err.message : String(err);
-        console.error('Chat interface fetch error:', err);
+        logger.error('ChatInterfaceSend', err);
         const errorMsg: ChatMessage = {
           id: `chat-${Date.now() + 1}`,
           role: 'assistant',
@@ -247,6 +251,7 @@ export default function ChatInterface() {
             key={idx}
             onClick={() => handleSendMessage(chip.query)}
             className="px-3 py-1.5 rounded-full border border-white/10 hover:border-cyan-400 bg-white/5 text-white/70 hover:text-white text-[10px] md:text-xs whitespace-nowrap transition-colors flex items-center gap-1 active:scale-95 shrink-0"
+            aria-label={chip.label}
           >
             <span>{chip.label}</span>
           </button>
@@ -263,6 +268,7 @@ export default function ChatInterface() {
               : 'bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/10'
           }`}
           title="Voice input"
+          aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
         >
           {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
         </button>
@@ -278,12 +284,14 @@ export default function ChatInterface() {
           }}
           placeholder={isListening ? 'Listening...' : 'Ask about restrooms, lines, food, parking...'}
           className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 focus:border-cyan-400 bg-[#0A0E27] text-white text-xs md:text-sm focus:outline-none"
+          aria-label="Ask FANVERSE AI a question"
         />
 
         <button
           onClick={() => handleSendMessage(inputValue)}
           disabled={!inputValue.trim()}
           className="p-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-[#0A0E27] font-bold shrink-0 disabled:opacity-40 disabled:hover:bg-cyan-500 disabled:scale-100 active:scale-95 transition-all"
+          aria-label="Send message"
         >
           <Send className="w-4 h-4" />
         </button>

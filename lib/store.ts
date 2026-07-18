@@ -32,6 +32,7 @@ export interface FanverseStore {
   activeView: ActiveView;
   isLoading: boolean;
   accessibilityMode: AccessibilityMode;
+  showEmergency: boolean;
 
   // ----- Actions -----
   /** Append a chat message to history */
@@ -63,6 +64,9 @@ export interface FanverseStore {
 
   /** Toggle loading spinner */
   setLoading: (loading: boolean) => void;
+
+  /** Toggle emergency SOS panel */
+  setShowEmergency: (show: boolean) => void;
 
   /** Clear all chat messages */
   clearChat: () => void;
@@ -193,6 +197,7 @@ export const useFanverseStore = create<FanverseStore>((set) => ({
   timeline: DEFAULT_TIMELINE,
   activeView: 'dashboard',
   isLoading: false,
+  showEmergency: false,
   accessibilityMode: {
     highContrast: false,
     largeText: false,
@@ -251,6 +256,8 @@ export const useFanverseStore = create<FanverseStore>((set) => ({
     })),
 
   setLoading: (loading) => set({ isLoading: loading }),
+
+  setShowEmergency: (show) => set({ showEmergency: show }),
 
   clearChat: () => set({ chatMessages: [WELCOME_MESSAGE] }),
 

@@ -62,18 +62,25 @@ FANVERSE AI maps every phase of a match-day into logical, context-aware decision
 
 ## ⚡ Evaluation Focus Areas & Implementation
 
-### 1. Code Quality (High Impact)
-- **Architecture**: Modular structure separating data models, simulation scheduling, API routing, and visual presentations.
-- **Strict Linting & Hygiene**: The project compiles with zero TypeScript errors and passes all ESLint rules cleanly.
-- **State Separation**: Zustand stores manage runtime data locally to prevent rendering race conditions.
+### 1. Code Quality & Architecture (High Impact)
+- **Zero Magic Values**: All application thresholds, API config parameters, limits, and values are centralized in [lib/constants.ts](file:///Users/rambhakranthi/Downloads/fanverse/lib/constants.ts).
+- **Environment Safety**: Required environment variables are validated at startup in [lib/env.ts](file:///Users/rambhakranthi/Downloads/fanverse/lib/env.ts) to fail fast on configuration errors.
+- **Production Logging**: Structured logger in [lib/logger.ts](file:///Users/rambhakranthi/Downloads/fanverse/lib/logger.ts) filters telemetry info and warnings out of production console logs.
+- **Strict Typing**: TypeScript `strict` configuration is enhanced with `noUncheckedIndexedAccess`, `noUnusedLocals`, and `noUnusedParameters` rules.
+- **No Unused Imports**: All components and modules have been refactored to remove dead code and unused declarations.
 
 ### 2. Problem Statement Alignment & Logic (High Impact)
+- **Emergency SOS Response System**: A dedicated [EmergencyPanel](file:///Users/rambhakranthi/Downloads/fanverse/components/dashboard/EmergencyPanel.tsx) overlay provides one-tap safety dispatching (medical, lost-child, security, evacuation) with context-aware guidance.
+- **Volunteer Coordination Hub**: A staff-only [VolunteerHub](file:///Users/rambhakranthi/Downloads/fanverse/components/dashboard/VolunteerHub.tsx) dynamically lists AI-prioritized task dispatches based on active gate crowd levels and queue sensor hotspots.
+- **AI Predictive Analytics**: A [PredictiveAnalytics](file:///Users/rambhakranthi/Downloads/fanverse/components/dashboard/PredictiveAnalytics.tsx) widget extrapolates current telemetry into forward-looking trends (crowd density spikes, queue length times, transport surge multipliers) with confidence levels and sparkline graphs.
 - **Dynamic Context Injection**: The Gemini client reads live stadium sensors (crowds, weather, transit) and user profiles (location, accessibility, diet) at every prompt turn.
 - **Proactive Notification Scheduler**: Background loops poll sensors every 3 seconds and push warning toasts when security lines exceed 15m, rain risk exceeds 50%, or gate closures occur.
 
 ### 3. Security (Medium Impact)
-- **Zero Hardcoded Credentials**: API keys are excluded from git-committed files (like the Dockerfile) and parameters are loaded dynamically via `.env.local` or environment variables at runtime.
-- **Standard Git Hygiene**: `.env.local` and compiler cache files are properly ignored in `.gitignore`.
+- **API Rate Limiting**: sliding window rate limiter protects endpoints (`/api/chat` restricted to 20 req/min, `/api/scan` restricted to 10 req/min) to prevent abuse and denial-of-service.
+- **Input XSS Sanitization**: Sanitization logic strips HTML script tags and javascript handlers from inputs before passing them to the Gemini API.
+- **Security Headers**: Standard headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Content-Security-Policy) are injected on every request via Next.js configuration.
+- **Zero Hardcoded Credentials**: API keys are loaded dynamically via environment variables at runtime.
 
 ### 4. Efficiency (Medium Impact)
 - **Reduced Context Payload**: Chat history is truncated to the last 6 messages to preserve API tokens, minimize network latency, and stay within free tier thresholds.
@@ -81,10 +88,13 @@ FANVERSE AI maps every phase of a match-day into logical, context-aware decision
 - **Optimized Standalone Container**: Next.js `standalone` mode excludes unneeded node packages in production docker builds, minimizing container sizes for Google Cloud Run.
 
 ### 5. Testing & Validation (Low Impact)
-- **Automated Verification Suite**: Includes a dedicated TypeScript validation suite (`scripts/run-tests.ts`) confirming initial state creation, simulation engine ticks, phase transition overflows, and dietary filtering rules.
-- **Command**: Run the tests easily using `npm run test`.
+- **Automated Verification Suite**: Includes a dedicated TypeScript validation suite ([scripts/run-tests.ts](file:///Users/rambhakranthi/Downloads/fanverse/scripts/run-tests.ts)) confirming initial state creation, simulation engine ticks, phase transition overflows, dietary filtering rules, rate limiting, and sanitization.
+- **Command**: Run the 18 tests easily using `npm run test`.
 
 ### 6. Accessibility & Inclusive Design (Low Impact)
+- **WCAG 2.1 Compliance**: Skip-to-content links added to layouts for keyboard-only visitors.
+- **Interactive Form Elements**: Settings inputs are linked explicitly to labels via `htmlFor`/`id` combinations. Custom toggles are implemented as accessible buttons with `role="switch"` and `aria-checked` states.
+- **ARIA Semantics**: Navigation menus contain clear role indicators (`role="navigation"`) and pages track current items using `aria-current="page"`.
 - **Wheelchair Assist Mode**: Prioritizes step-free routes, elevator lobbies, and adjusts the chatbot's turn-by-turn navigation instructions.
 - **Display Overrides**: Configurable High Contrast Mode, Large Text Scaling (for high-sun outdoor reading), and Voice Navigation dictation.
 

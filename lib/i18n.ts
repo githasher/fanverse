@@ -75,7 +75,7 @@ export const translations = {
     settingsTitle: 'Paramètres et préférences',
     timelineTitle: 'Chronologie du match du supporter',
     interactiveMap: 'Lancer le jumeau numérique',
-    sustainabilityTitle: 'Pôle de durabilidade GreenGoal™',
+    sustainabilityTitle: 'Pôle de durabilité GreenGoal™',
     transportTitle: 'Tableau des correspondances de transit',
     saveChanges: 'Enregistrer les paramètres',
     chooseLanguage: 'Sélecteur de langue',

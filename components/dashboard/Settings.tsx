@@ -20,7 +20,7 @@ export default function Settings(): React.JSX.Element {
   const setAccessibility = useFanverseStore((state) => state.setAccessibility);
 
   /**
-   * Toggles individual user accessibility sensor features inside userProfile store.
+   * Toggles individual user accessibility features inside userProfile store.
    *
    * @param key The specific accessibility setting key.
    * @returns void
@@ -46,7 +46,7 @@ export default function Settings(): React.JSX.Element {
     });
   };
 
-  const handleDietaryToggle = (tag: DietaryTag) => {
+  const handleDietaryToggle = (tag: DietaryTag): void => {
     const isPresent = userProfile.preferences.dietaryRestrictions.includes(tag);
     const newTags = isPresent
       ? userProfile.preferences.dietaryRestrictions.filter((t) => t !== tag)
@@ -66,8 +66,6 @@ export default function Settings(): React.JSX.Element {
     { code: 'fr', name: 'Français 🇫🇷' },
     { code: 'pt', name: 'Português 🇧🇷' },
     { code: 'ar', name: 'العربية 🇸🇦' },
-    { code: 'hi', name: 'हिन्दी 🇮🇳' },
-    { code: 'ja', name: '日本語 🇯🇵' },
   ];
 
   return (
@@ -83,13 +81,14 @@ export default function Settings(): React.JSX.Element {
           {/* User Details */}
           <div className="p-4 bg-[#0A0E27] rounded-xl border border-white/5 space-y-4">
             <h4 className="text-xs font-bold font-outfit uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-              <Smile className="w-4 h-4" /> General Profile
+              <Smile className="w-4 h-4" aria-hidden="true" /> General Profile
             </h4>
             
             <div className="space-y-3">
               <div className="space-y-1">
-                <label className="text-[10px] text-white/40 uppercase">Fan Name</label>
+                <label htmlFor="fan-name" className="text-[10px] text-white/40 uppercase block font-semibold">Fan Name</label>
                 <input
+                  id="fan-name"
                   type="text"
                   value={userProfile.name}
                   onChange={(e) => updateUserProfile({ name: e.target.value })}
@@ -99,8 +98,9 @@ export default function Settings(): React.JSX.Element {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] text-white/40 uppercase">Supporting Team</label>
+                <label htmlFor="favorite-team" className="text-[10px] text-white/40 uppercase block font-semibold">Supporting Team</label>
                 <input
+                  id="favorite-team"
                   type="text"
                   value={userProfile.preferences.favoriteTeam}
                   onChange={(e) =>
@@ -121,7 +121,7 @@ export default function Settings(): React.JSX.Element {
               Preferred Language
             </h4>
             
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2" role="group" aria-label="Preferred Language selection">
               {languages.map((lang) => (
                 <button
                   key={lang.code}
@@ -131,6 +131,7 @@ export default function Settings(): React.JSX.Element {
                       ? 'bg-cyan-500 border-cyan-400 text-[#0A0E27]'
                       : 'bg-white/5 border-white/5 text-white/60 hover:text-white hover:bg-white/10'
                   }`}
+                  aria-pressed={userProfile.language === lang.code}
                 >
                   {lang.name}
                 </button>
@@ -141,10 +142,10 @@ export default function Settings(): React.JSX.Element {
           {/* Dietary selection */}
           <div className="p-4 bg-[#0A0E27] rounded-xl border border-white/5 space-y-3">
             <h4 className="text-xs font-bold font-outfit uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-              <Flame className="w-4 h-4" /> Dietary Preferences
+              <Flame className="w-4 h-4" aria-hidden="true" /> Dietary Preferences
             </h4>
             
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Dietary preferences selection">
               {(['vegetarian', 'vegan', 'gluten-free', 'halal', 'kosher'] as DietaryTag[]).map((tag) => {
                 const isSelected = userProfile.preferences.dietaryRestrictions.includes(tag);
                 return (
@@ -156,6 +157,7 @@ export default function Settings(): React.JSX.Element {
                         ? 'bg-cyan-500 border-cyan-400 text-[#0A0E27] shadow shadow-cyan-500/10'
                         : 'bg-white/5 border-white/5 text-white/60 hover:text-white'
                     }`}
+                    aria-pressed={isSelected}
                   >
                     {tag}
                   </button>
@@ -170,13 +172,13 @@ export default function Settings(): React.JSX.Element {
           {/* Wheelchair, elderly alerts */}
           <div className="p-4 bg-[#0A0E27] rounded-xl border border-white/5 space-y-4">
             <h4 className="text-xs font-bold font-outfit uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-              <Shield className="w-4 h-4" /> Physical Accessibility
+              <Shield className="w-4 h-4" aria-hidden="true" /> Physical Accessibility
             </h4>
             <p className="text-[10px] text-white/40 leading-relaxed">
               Enabling these preferences instructs the AI navigation engine to route you through step-free pathways, elevators, and low-traffic areas.
             </p>
 
-            <div className="space-y-3">
+            <div className="space-y-3" role="group" aria-label="Physical accessibility overrides">
               {[
                 { key: 'wheelchair', label: 'Wheelchair / Step-free routing', desc: 'Prioritizes ramps and elevators.' },
                 { key: 'elderly', label: 'Elderly assistance routing', desc: 'Reroutes via shorter walking steps.' },
@@ -185,21 +187,24 @@ export default function Settings(): React.JSX.Element {
               ].map((item) => {
                 const isSelected = userProfile.accessibility[item.key as keyof typeof userProfile.accessibility];
                 return (
-                  <div
+                  <button
                     key={item.key}
                     onClick={() => handleAccessibilityToggle(item.key as 'wheelchair' | 'visualImpairment' | 'hearingImpairment' | 'elderly')}
-                    className={`p-3 rounded-lg border flex justify-between items-center cursor-pointer transition-all ${
+                    className={`w-full p-3 rounded-lg border flex justify-between items-center text-left transition-all cursor-pointer ${
                       isSelected ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-white/5 bg-white/5 hover:bg-white/10'
                     }`}
+                    role="switch"
+                    aria-checked={isSelected}
+                    aria-label={`${item.label}: ${item.desc}`}
                   >
                     <div>
                       <span className="font-bold text-xs text-white font-outfit block">{item.label}</span>
                       <span className="text-[9px] text-white/40 block mt-0.5">{item.desc}</span>
                     </div>
-                    <div className={`w-8 h-4 rounded-full p-0.5 transition-all ${isSelected ? 'bg-cyan-500' : 'bg-slate-800'}`}>
+                    <div className={`w-8 h-4 rounded-full p-0.5 transition-all shrink-0 ${isSelected ? 'bg-cyan-500' : 'bg-slate-800'}`}>
                       <div className={`w-3 h-3 rounded-full bg-white transition-all ${isSelected ? 'translate-x-4' : 'translate-x-0'}`} />
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -208,10 +213,10 @@ export default function Settings(): React.JSX.Element {
           {/* UI Contrast & Text overrides */}
           <div className="p-4 bg-[#0A0E27] rounded-xl border border-white/5 space-y-4">
             <h4 className="text-xs font-bold font-outfit uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-              <Eye className="w-4 h-4" /> Display Overrides
+              <Eye className="w-4 h-4" aria-hidden="true" /> Display Overrides
             </h4>
 
-            <div className="space-y-3">
+            <div className="space-y-3" role="group" aria-label="Display overrides">
               {[
                 { key: 'highContrast', label: 'High Contrast Mode', desc: 'Enforces pitch black background with neon green borders.' },
                 { key: 'largeText', label: 'Large Text', desc: 'Scale font sizes for better outdoor visibility.' },
@@ -219,21 +224,24 @@ export default function Settings(): React.JSX.Element {
               ].map((item) => {
                 const isSelected = accessibilityMode[item.key as keyof typeof accessibilityMode];
                 return (
-                  <div
+                  <button
                     key={item.key}
                     onClick={() => handleDisplayToggle(item.key as 'highContrast' | 'largeText' | 'voiceNavigation')}
-                    className={`p-3 rounded-lg border flex justify-between items-center cursor-pointer transition-all ${
+                    className={`w-full p-3 rounded-lg border flex justify-between items-center text-left transition-all cursor-pointer ${
                       isSelected ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-white/5 bg-white/5 hover:bg-white/10'
                     }`}
+                    role="switch"
+                    aria-checked={isSelected}
+                    aria-label={`${item.label}: ${item.desc}`}
                   >
                     <div>
                       <span className="font-bold text-xs text-white font-outfit block">{item.label}</span>
                       <span className="text-[9px] text-white/40 block mt-0.5">{item.desc}</span>
                     </div>
-                    <div className={`w-8 h-4 rounded-full p-0.5 transition-all ${isSelected ? 'bg-cyan-500' : 'bg-slate-800'}`}>
+                    <div className={`w-8 h-4 rounded-full p-0.5 transition-all shrink-0 ${isSelected ? 'bg-cyan-500' : 'bg-slate-800'}`}>
                       <div className={`w-3 h-3 rounded-full bg-white transition-all ${isSelected ? 'translate-x-4' : 'translate-x-0'}`} />
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>

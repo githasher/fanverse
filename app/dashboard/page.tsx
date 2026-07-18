@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { useSimulation } from '@/hooks/useSimulation';
 import Sidebar from '@/components/dashboard/Sidebar';
@@ -14,6 +14,8 @@ import ProactiveAlert from '@/components/dashboard/ProactiveAlert';
 import StaffCommand from '@/components/dashboard/StaffCommand';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { t } from '@/lib/i18n';
+import EmergencyPanel from '@/components/dashboard/EmergencyPanel';
+import { logger } from '@/lib/logger';
 
 /**
  * Main dashboard container page component.
@@ -28,6 +30,8 @@ export default function DashboardPage(): ReactNode {
   
   const activeView = useFanverseStore((state) => state.activeView);
   const userProfile = useFanverseStore((state) => state.userProfile);
+  const showEmergency = useFanverseStore((state) => state.showEmergency);
+  const setShowEmergency = useFanverseStore((state) => state.setShowEmergency);
 
   // Set user location if browser geolocation is available
   useEffect(() => {
@@ -42,7 +46,7 @@ export default function DashboardPage(): ReactNode {
           });
         },
         (error) => {
-          console.warn('Geolocation not available:', error.message);
+          logger.warn('DashboardPageGeolocation', `Geolocation not available: ${error.message}`);
           // Set standard mock location near MetLife Stadium
           useFanverseStore.getState().updateUserProfile({
             currentLocation: { lat: 40.8128, lng: -74.0742 },
@@ -84,7 +88,7 @@ export default function DashboardPage(): ReactNode {
         <Sidebar />
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto relative p-4 md:p-8">
+        <main id="main-content" className="flex-1 flex flex-col min-w-0 overflow-y-auto relative p-4 md:p-8">
           {/* Header bar */}
           <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
             <div>
@@ -131,6 +135,9 @@ export default function DashboardPage(): ReactNode {
 
         {/* Stack of proactive alerts (Notification Toasts) */}
         <ProactiveAlert />
+
+        {/* Emergency SOS Overlay */}
+        {showEmergency && <EmergencyPanel onClose={() => setShowEmergency(false)} />}
       </div>
     </ErrorBoundary>
   );

@@ -66,6 +66,8 @@ function ProactiveAlert(): React.JSX.Element {
             className={`p-4 rounded-xl border-y border-r border-l-4 border-white/10 bg-[#0A0E27]/90 backdrop-blur-2xl shadow-2xl flex gap-3 items-start pointer-events-auto ${getBorderColor(
               notif.priority
             )}`}
+            role="alert"
+            aria-live={notif.priority === 'critical' ? 'assertive' : 'polite'}
           >
             <div className="p-2 bg-white/5 rounded-lg border border-white/5 shrink-0">
               {getIcon(notif.type)}
@@ -92,6 +94,7 @@ function ProactiveAlert(): React.JSX.Element {
             <button
               onClick={() => markNotificationRead(notif.id)}
               className="text-white/40 hover:text-white shrink-0 p-1 hover:bg-white/5 rounded-lg transition-colors"
+              aria-label="Dismiss alert"
             >
               <X className="w-4 h-4" />
             </button>

@@ -19,6 +19,8 @@ import {
   MapPin,
   Sparkles
 } from 'lucide-react';
+import VolunteerHub from './VolunteerHub';
+import PredictiveAnalytics from './PredictiveAnalytics';
 
 interface VolunteerTask {
   id: string;
@@ -325,6 +327,12 @@ export default function StaffCommand(): React.JSX.Element {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Volunteer Coordination Hub & Predictive Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <VolunteerHub />
+        <PredictiveAnalytics />
       </div>
     </div>
   );

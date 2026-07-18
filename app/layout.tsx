@@ -43,6 +43,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
       <body className="bg-[#0A0E27] text-white antialiased min-h-screen overflow-x-hidden font-[family-name:var(--font-inter)]">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-cyan-500 focus:text-[#0A0E27] focus:font-semibold focus:text-sm"
+        >
+          Skip to main content
+        </a>
         {children}
       </body>
     </html>

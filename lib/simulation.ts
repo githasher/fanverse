@@ -153,7 +153,10 @@ export class SimulationEngine {
     const phaseDuration = PHASE_DURATION_TICKS[this.state.phase];
 
     if (this.phaseTickCounter >= phaseDuration && currentIdx < PHASE_ORDER.length - 1) {
-      this.state.phase = PHASE_ORDER[currentIdx + 1];
+      const nextPhase = PHASE_ORDER[currentIdx + 1];
+      if (nextPhase) {
+        this.state.phase = nextPhase;
+      }
       this.phaseTickCounter = 0;
     }
   }
@@ -165,10 +168,16 @@ export class SimulationEngine {
   private scheduleGateClosures(): void {
     // Schedule 1-2 brief gate closures for realism
     const gateIdx1 = Math.floor(this.rng() * 8);
-    this.gateClosureSchedule.set(this.state.gates[gateIdx1].id, 25 + Math.floor(this.rng() * 30));
+    const gate1 = this.state.gates[gateIdx1];
+    if (gate1) {
+      this.gateClosureSchedule.set(gate1.id, 25 + Math.floor(this.rng() * 30));
+    }
 
     const gateIdx2 = (gateIdx1 + 3) % 8;
-    this.gateClosureSchedule.set(this.state.gates[gateIdx2].id, 70 + Math.floor(this.rng() * 40));
+    const gate2 = this.state.gates[gateIdx2];
+    if (gate2) {
+      this.gateClosureSchedule.set(gate2.id, 70 + Math.floor(this.rng() * 40));
+    }
   }
 
   private updateGates(): void {
