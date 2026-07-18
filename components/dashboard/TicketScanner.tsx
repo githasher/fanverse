@@ -33,12 +33,13 @@ const generateSuccessMessage = (ticket: TicketInfo): ChatMessage => ({
 });
 
 /**
+ * TicketScanner component.
  * Dashboard component for scanning user tickets.
  * Utilizes base64 OCR parsing from Gemini Vision to dynamically load user seat location.
  *
- * @returns React element representing the ticket scanner layout.
+ * @returns React.JSX.Element representing the ticket scanner layout.
  */
-export default function TicketScanner() {
+export default function TicketScanner(): React.JSX.Element {
   const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +50,12 @@ export default function TicketScanner() {
   const setActiveView = useFanverseStore((state) => state.setActiveView);
   const addMessage = useFanverseStore((state) => state.addMessage);
 
-  const handleDrag = (e: React.DragEvent) => {
+  /**
+   * Handles dragging files over the dropzone.
+   *
+   * @param e DragEvent from container.
+   */
+  const handleDrag = (e: React.DragEvent): void => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') {
@@ -59,7 +65,12 @@ export default function TicketScanner() {
     }
   };
 
-  const processImage = useCallback(async (base64: string) => {
+  /**
+   * Submits base64 ticket payload to Gemini Vision scanner route.
+   *
+   * @param base64 String containing raw image data.
+   */
+  const processImage = useCallback(async (base64: string): Promise<void> => {
     setLoading(true);
     setError(null);
     try {

@@ -5,7 +5,13 @@
 
 import { RATE_LIMIT_CHAT_PER_MINUTE, RATE_LIMIT_SCAN_PER_MINUTE } from './constants';
 
-/** Sliding window entry: array of request timestamps */
+/** 
+ * Sliding window entry: array of request timestamps.
+ * NOTE: This rate limiter uses an in-memory Map database instance. In serverless multi-region
+ * cloud deployments (such as Vercel or AWS Lambda), multiple runtime container instances
+ * do not share local memory. To scale in production, replace this local Map with a shared
+ * Redis backend cache (e.g. `@upstash/redis` or `ioredis`) to keep limits globally synchronized.
+ */
 const windows = new Map<string, number[]>();
 
 /** Window duration in milliseconds (1 minute) */

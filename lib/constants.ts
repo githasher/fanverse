@@ -108,3 +108,34 @@ export const COLOR_SUCCESS = '#10B981' as const;
 
 /** Danger color (red) */
 export const COLOR_DANGER = '#EF4444' as const;
+
+// -----------------------------------------------------------------------------
+// Operations Staff / Organizer Thresholds
+// -----------------------------------------------------------------------------
+
+/** Threshold for high gate crowd level */
+export const STAFF_GATE_CROWD_THRESHOLD = 0.8;
+
+/** Threshold for moderate gate crowd level */
+export const STAFF_GATE_MODERATE_CROWD_THRESHOLD = 0.45;
+
+/** Threshold for low gate crowd level */
+export const STAFF_GATE_QUIET_THRESHOLD = 0.4;
+
+/** Threshold for moderate gate congestion */
+export const STAFF_GATE_CROWD_MODERATE = 0.75;
+
+/** Threshold for severe gate congestion */
+export const STAFF_GATE_CROWD_SEVERE = 0.9;
+
+/** Threshold for critical facility wait times in minutes */
+export const STAFF_FACILITY_WAIT_CRITICAL_MIN = 15;
+
+/** Threshold for critical food vendor wait times in minutes */
+export const STAFF_FOOD_WAIT_CRITICAL_MIN = 20;
+
+/** Threshold for quiet food vendor wait times in minutes */
+export const STAFF_FOOD_WAIT_QUIET_MIN = 5;
+
+/** Rain probability warning threshold */
+export const STAFF_RAIN_WARNING_THRESHOLD = 50;

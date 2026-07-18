@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { Send, Mic, MicOff, AlertCircle } from 'lucide-react';
-import type { ChatMessage } from '@/types';
+import type { ChatMessage, StadiumState } from '@/types';
 import { logger } from '@/lib/logger';
+import { CHAT_HISTORY_WINDOW, MAX_MESSAGE_LENGTH } from '@/lib/constants';
+import { t } from '@/lib/i18n';
 
 interface WebSpeechRecognition {
   continuous: boolean;
@@ -18,7 +20,53 @@ interface WebSpeechRecognition {
   onend: () => void;
 }
 
-export default function ChatInterface() {
+/**
+ * Prunes visual and metadata fields from stadium state to minimize payload transit size.
+ *
+ * @param state The live Zustand StadiumState object.
+ * @returns A pruned StadiumState structure matching backend tool schema needs.
+ */
+function pruneStadiumState(state: StadiumState): Partial<StadiumState> {
+  return {
+    weather: state.weather,
+    transport: state.transport,
+    gates: state.gates.map((g) => ({
+      name: g.name,
+      status: g.status,
+      crowdLevel: g.crowdLevel,
+      waitMinutes: g.waitMinutes,
+    })),
+    zones: state.zones.map((z) => ({
+      name: z.name,
+      crowdDensity: z.crowdDensity,
+      temperature: z.temperature,
+    })),
+    facilities: state.facilities.map((f) => ({
+      name: f.name,
+      type: f.type,
+      zone: f.zone,
+      open: f.open,
+      queueLength: f.queueLength,
+      waitMinutes: f.waitMinutes,
+    })),
+    foodVendors: state.foodVendors.map((v) => ({
+      name: v.name,
+      cuisine: v.cuisine,
+      zone: v.zone,
+      open: v.open,
+      waitMinutes: v.waitMinutes,
+      dietaryTags: v.dietaryTags,
+    })),
+  };
+}
+
+/**
+ * ChatInterface Component.
+ * Full screen or floating AI assistant chat interface that coordinates telemetry questions.
+ *
+ * @returns React.JSX.Element representing the AI chatbot interface.
+ */
+export default function ChatInterface(): React.JSX.Element {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -32,14 +80,16 @@ export default function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<WebSpeechRecognition | null>(null);
 
-  // Auto scroll to bottom
-  const scrollToBottom = () => {
+  /**
+   * Smoothly scrolls the chat message container down to the latest message.
+   */
+  const scrollToBottom = useCallback((): void => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [chatMessages, isTyping]);
+  }, [chatMessages, isTyping, scrollToBottom]);
 
   // Setup Web Speech API for voice dictation
   useEffect(() => {
@@ -51,14 +101,14 @@ export default function ChatInterface() {
         const rec = new SpeechRecognition();
         rec.continuous = false;
         rec.interimResults = false;
-        rec.lang = userProfile.language === 'ar' ? 'ar-SA' : 'en-US';
+        rec.lang = useFanverseStore.getState().userProfile.language === 'ar' ? 'ar-SA' : 'en-US';
 
         rec.onstart = () => {
           setIsListening(true);
           setSpeechError(null);
         };
 
-        rec.onresult = (event: { results: { [key: number]: { [key: number]: { transcript: string } } } }) => {
+        rec.onresult = (event) => {
           const resultGroup = event.results[0];
           const result = resultGroup ? resultGroup[0] : null;
           if (result) {
@@ -66,7 +116,7 @@ export default function ChatInterface() {
           }
         };
 
-        rec.onerror = (event: { error: string }) => {
+        rec.onerror = (event) => {
           logger.error('SpeechRecognition', event.error);
           setSpeechError(`Voice error: ${event.error}`);
           setIsListening(false);
@@ -79,9 +129,19 @@ export default function ChatInterface() {
         recognitionRef.current = rec;
       }
     }
+  }, []); // Instantiate once
+
+  // Dynamically update speech recognition locale lang inside the reference rather than re-creating the hook
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = userProfile.language === 'ar' ? 'ar-SA' : 'en-US';
+    }
   }, [userProfile.language]);
 
-  const toggleVoiceInput = () => {
+  /**
+   * Toggles Speech Recognition states.
+   */
+  const toggleVoiceInput = (): void => {
     if (!recognitionRef.current) {
       setSpeechError('Web Speech API is not supported in this browser.');
       return;
@@ -94,34 +154,22 @@ export default function ChatInterface() {
     }
   };
 
-  // Quick Action chips
-  const suggestionChips = [
-    { label: 'Nearest restroom?', query: 'Find the nearest restroom with the shortest wait time.' },
-    { label: 'Halftime food recommendations?', query: 'Suggest food vendors with low wait times that fit my profile.' },
-    { label: 'Where is my seat?', query: 'Show me directions to my seat and which gate I should enter.' },
-    { label: 'Best post-match exit route?', query: 'What is the exit plan and transport suggestion after full time?' },
-    { label: 'I lost my child / Emergency assistance', query: 'EMERGENCY: I need medical support or safety assistance.' },
-  ];
-
-  const handleSendMessage = useCallback(
+  /**
+   * Sends the user's message query to the server, and processes the streamable result.
+   * Uses store-direct state to prevent recreation on every history update.
+   */
+  const fetchAIResponse = useCallback(
     async (text: string) => {
       if (!text.trim()) return;
 
-      // Create user message
-      const userMsg: ChatMessage = {
-        id: `chat-${Date.now()}`,
-        role: 'user',
-        content: text,
-        timestamp: Date.now(),
-        type: 'text',
-      };
-
-      addMessage(userMsg);
-      setInputValue('');
       setIsTyping(true);
-
       try {
-        const history = chatMessages.slice(-6); // Send last 6 messages to keep context window small
+        // Retrieve chat history directly from Zustand state to keep useCallback dependencies pristine
+        const currentHistory = useFanverseStore.getState().chatMessages;
+        const historySnapshot = currentHistory.slice(-CHAT_HISTORY_WINDOW);
+
+        // Strip coordinates / static visual detail to prune payload size
+        const prunedTelemetry = pruneStadiumState(stadiumState);
 
         const res = await fetch('/api/chat', {
           method: 'POST',
@@ -129,10 +177,10 @@ export default function ChatInterface() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            message: text,
-            stadiumState,
+            message: text.substring(0, MAX_MESSAGE_LENGTH),
+            stadiumState: prunedTelemetry,
             userProfile,
-            history,
+            history: historySnapshot,
           }),
         });
 
@@ -152,12 +200,18 @@ export default function ChatInterface() {
 
         addMessage(assistantMsg);
       } catch (err: unknown) {
-        const errorMsgString = err instanceof Error ? err.message : String(err);
         logger.error('ChatInterfaceSend', err);
+        
+        // Sanitize error output to avoid technical/stack leakage in production
+        const sanitizedErrText =
+          err instanceof Error && err.message.includes('rate limit')
+            ? 'Rate limit exceeded. Please wait a moment before sending another message.'
+            : 'Gemini server capacity limits reached. Please verify your connection and try again.';
+
         const errorMsg: ChatMessage = {
           id: `chat-${Date.now() + 1}`,
           role: 'assistant',
-          content: `⚠️ Failed to fetch response: ${errorMsgString || 'Gemini quota limits reached.'}. Please retry or check network settings.`,
+          content: `⚠️ ${sanitizedErrText}`,
           timestamp: Date.now(),
           type: 'text',
         };
@@ -166,15 +220,66 @@ export default function ChatInterface() {
         setIsTyping(false);
       }
     },
-    [chatMessages, stadiumState, userProfile, addMessage]
+    [stadiumState, userProfile, addMessage]
   );
+
+  /**
+   * Adds the user message to history, then triggers the AI API call.
+   */
+  const handleSendMessage = useCallback(
+    async (text: string) => {
+      if (!text.trim()) return;
+
+      // Create user message
+      const userMsg: ChatMessage = {
+        id: `chat-${Date.now()}`,
+        role: 'user',
+        content: text,
+        timestamp: Date.now(),
+        type: 'text',
+      };
+
+      addMessage(userMsg);
+      setInputValue('');
+      await fetchAIResponse(text);
+    },
+    [addMessage, fetchAIResponse]
+  );
+
+  // Auto-trigger AI response logic for externally injected query messages (e.g. from maps/queue clicks)
+  useEffect(() => {
+    const lastMsg = chatMessages[chatMessages.length - 1];
+    if (lastMsg && lastMsg.role === 'user' && !isTyping) {
+      // Look for a corresponding assistant reply with a timestamp after this message
+      const hasResponse = chatMessages.some(
+        (m) => m.role === 'assistant' && m.timestamp > lastMsg.timestamp
+      );
+      if (!hasResponse) {
+        setTimeout(() => {
+          fetchAIResponse(lastMsg.content);
+        }, 0);
+      }
+    }
+  }, [chatMessages, isTyping, fetchAIResponse]);
+
+  // Translated suggestion chips
+  const suggestionChips = [
+    { label: t('chipRestroom', userProfile.language), query: 'Find the nearest restroom with the shortest wait time.' },
+    { label: t('chipFood', userProfile.language), query: 'Suggest food vendors with low wait times that fit my profile.' },
+    { label: t('chipSeat', userProfile.language), query: 'Show me directions to my seat and which gate I should enter.' },
+    { label: t('chipExit', userProfile.language), query: 'What is the exit plan and transport suggestion after full time?' },
+    { label: t('chipHelp', userProfile.language), query: 'EMERGENCY: I need medical support or safety assistance.' },
+  ];
 
   return (
     <div className="flex flex-col h-[calc(100vh-200px)] bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden relative">
       <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-amber-400" />
 
-      {/* Messages Window */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages Window with aria-live updates */}
+      <div 
+        aria-live="polite" 
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+      >
         {chatMessages.map((msg) => {
           const isUser = msg.role === 'user';
           return (
@@ -189,7 +294,6 @@ export default function ChatInterface() {
                     : 'bg-white/5 text-white border-white/10 rounded-tl-none'
                 }`}
               >
-                {/* Parse Markdown robustly for a premium layout */}
                 <div className="space-y-1 whitespace-pre-wrap">
                   {(() => {
                     const parseLineContent = (text: string) => {
@@ -213,7 +317,6 @@ export default function ChatInterface() {
                       // Match bullet points starting with •, *, or -
                       if (trimmed.startsWith('•') || trimmed.startsWith('*') || trimmed.startsWith('-')) {
                         const contentText = trimmed.replace(/^[•*-]\s*/, '');
-                        // If bullet line had no content (e.g. just a bullet symbol), skip rendering empty space
                         if (!contentText) return null;
 
                         return (

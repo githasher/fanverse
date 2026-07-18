@@ -159,6 +159,18 @@ export interface AccessibilityMode {
   voiceNavigation: boolean;
 }
 
+/** Volunteer task representation used by staff command and hub components */
+export interface VolunteerTask {
+  id: string;
+  assignee: string;
+  status: 'pending' | 'in-progress' | 'completed';
+  title?: string;
+  task?: string;
+  zone?: string;
+  priority?: 'urgent' | 'normal' | 'low';
+  estimatedMinutes?: number;
+}
+
 // -----------------------------------------------------------------------------
 // Stadium — Gates
 // -----------------------------------------------------------------------------

@@ -14,6 +14,20 @@ import { logger } from '@/lib/logger';
  */
 export async function POST(req: Request): Promise<NextResponse> {
   try {
+    // CSRF Origin verification check
+    const origin = req.headers.get('origin');
+    const host = req.headers.get('host');
+    if (origin && host) {
+      try {
+        const originUrl = new URL(origin);
+        if (originUrl.host !== host) {
+          return NextResponse.json({ error: 'CSRF Protection: Forbidden origin request.' }, { status: 403 });
+        }
+      } catch {
+        return NextResponse.json({ error: 'CSRF Protection: Invalid origin format.' }, { status: 403 });
+      }
+    }
+
     // Rate limiting check
     const clientIp = getClientIp(req);
     const rateCheck = checkRateLimit(`scan:${clientIp}`, SCAN_RATE_LIMIT);

@@ -38,6 +38,12 @@ export const translations = {
     navTimeline: 'Match Timeline',
     navScanner: 'Ticket Scanner',
     navSettings: 'Preferences & i18n',
+    // Chips
+    chipRestroom: 'Nearest Restroom',
+    chipFood: 'Short Wait Dining',
+    chipSeat: 'Find My Seat',
+    chipExit: 'Best Exit Plan',
+    chipHelp: 'Request SOS Help',
   },
   es: {
     dashboardTitle: 'Gemelo digital del estadio',
@@ -63,6 +69,12 @@ export const translations = {
     navTimeline: 'Cronología del fan',
     navScanner: 'Escanear boleto',
     navSettings: 'Preferencias e i18n',
+    // Chips
+    chipRestroom: 'Baño Cercano',
+    chipFood: 'Comida Sin Filas',
+    chipSeat: 'Mi Asiento',
+    chipExit: 'Plan de Salida',
+    chipHelp: 'Ayuda de Emergencia',
   },
   fr: {
     dashboardTitle: 'Jumeau numérique du stade',
@@ -88,6 +100,12 @@ export const translations = {
     navTimeline: 'Parcours du fan',
     navScanner: 'Numériser le billet',
     navSettings: 'Préférences & i18n',
+    // Chips
+    chipRestroom: 'Toilettes Proches',
+    chipFood: 'Restauration Rapide',
+    chipSeat: 'Trouver Mon Siège',
+    chipExit: 'Plan de Sortie',
+    chipHelp: 'Demande d\'Urgence',
   },
   pt: {
     dashboardTitle: 'Gêmeo digital do estádio',
@@ -113,6 +131,12 @@ export const translations = {
     navTimeline: 'Jornada do torcedor',
     navScanner: 'Escanear ingresso',
     navSettings: 'Preferências e i18n',
+    // Chips
+    chipRestroom: 'Banheiro Próximo',
+    chipFood: 'Comida Sem Fila',
+    chipSeat: 'Encontrar Meu Assento',
+    chipExit: 'Melhor Rota de Saída',
+    chipHelp: 'Ajuda de Emergência',
   },
   ar: {
     dashboardTitle: 'التوأم الرقمي للاستاد',
@@ -138,6 +162,12 @@ export const translations = {
     navTimeline: 'الجدول الزمني للمشجع',
     navScanner: 'ماسح التذاكر الضوئي',
     navSettings: 'التفضيلات واللغات',
+    // Chips
+    chipRestroom: 'أقرب دورة مياه',
+    chipFood: 'وجبات انتظار قصير',
+    chipSeat: 'البحث عن مقعدي',
+    chipExit: 'أفضل خطة خروج',
+    chipHelp: 'طلب المساعدة الطارئة',
   },
 } as const;
 

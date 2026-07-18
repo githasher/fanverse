@@ -137,8 +137,16 @@ const StadiumMap = React.memo(function StadiumMap(): React.JSX.Element {
                     cx={fac.position.x}
                     cy={fac.position.y}
                     r="1.8"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Restroom: ${fac.name}, wait time ${fac.waitMinutes} minutes`}
                     onClick={() => setSelectedFacility(fac)}
-                    className={`cursor-pointer stroke-[#0A0E27] stroke-[0.3] hover:r-[2.2] transition-all ${
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setSelectedFacility(fac);
+                      }
+                    }}
+                    className={`cursor-pointer stroke-[#0A0E27] stroke-[0.3] hover:r-[2.2] transition-all focus:outline-none focus:stroke-white ${
                       selectedFacility?.id === fac.id
                         ? 'fill-cyan-400 animate-pulse'
                         : 'fill-indigo-500'
@@ -156,8 +164,16 @@ const StadiumMap = React.memo(function StadiumMap(): React.JSX.Element {
                     cx={vendor.position.x}
                     cy={vendor.position.y}
                     r="1.8"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Food Vendor: ${vendor.name}, wait time ${vendor.waitMinutes} minutes`}
                     onClick={() => setSelectedFacility(vendor)}
-                    className={`cursor-pointer stroke-[#0A0E27] stroke-[0.3] hover:r-[2.2] transition-all ${
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setSelectedFacility(vendor);
+                      }
+                    }}
+                    className={`cursor-pointer stroke-[#0A0E27] stroke-[0.3] hover:r-[2.2] transition-all focus:outline-none focus:stroke-white ${
                       selectedFacility?.id === vendor.id
                         ? 'fill-cyan-400 animate-pulse'
                         : 'fill-amber-500'
@@ -247,27 +263,12 @@ const StadiumMap = React.memo(function StadiumMap(): React.JSX.Element {
                     useFanverseStore.getState().addMessage({
                       id: `nav-query-${Date.now()}`,
                       role: 'user',
-                      content: `How do I get to ${selectedFacility.name}?`,
+                      content: `How do I get to ${selectedFacility.name} in Section ${selectedFacility.zone}? Please provide walking directions.`,
                       timestamp: Date.now(),
                       type: 'text',
                     });
                     
                     useFanverseStore.getState().setActiveView('chat');
-                    
-                    // Simulate loading and answer
-                    setTimeout(() => {
-                      useFanverseStore.getState().addMessage({
-                        id: `nav-answer-${Date.now()}`,
-                        role: 'assistant',
-                        content: `🧭 **Directions to ${selectedFacility.name}:**\n\n1. From your current section, turn left and follow the main concourse corridor East.\n2. Proceed past the section entrance signs towards Section ${selectedFacility.zone}.\n3. ${
-                          isWheelchair
-                            ? 'Take the Section F elevator down to the concourse floor.'
-                            : 'Walk down the Section F stairwell to the concourse level.'
-                        }\n4. ${selectedFacility.name} is situated directly on the right (look for the illuminated signboard).\n\n*Estimated walking time: 3-5 minutes.*`,
-                        timestamp: Date.now(),
-                        type: 'route',
-                      });
-                    }, 800);
                   }}
                   className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-[#0A0E27] font-bold text-xs rounded-xl active:scale-95 transition-all text-center"
                 >

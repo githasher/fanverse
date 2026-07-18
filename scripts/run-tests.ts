@@ -4,7 +4,8 @@ import { createInitialStadiumState } from '../lib/stadiumData';
 import { SimulationEngine } from '../lib/simulation';
 import { translations } from '../lib/i18n';
 import { checkRateLimit } from '../lib/rateLimit';
-import { sanitizeInput } from '../lib/validation';
+import { sanitizeInput, validateChatRequest, validateScanRequest } from '../lib/validation';
+import { t } from '../lib/i18n';
 
 console.log('🧪 Starting FANVERSE AI Validation Tests...');
 
@@ -172,9 +173,14 @@ runTest('Test 10: Multilingual Translation Directory Coverage', () => {
   });
 });
 
-runTest('Test 11: Seating OCR Vision Mock Validation', () => {
-  const imageBase64 = 'data:image/jpeg;base64,mockdata';
-  assert.ok(imageBase64.startsWith('data:image/'), 'Should confirm base64 image data format');
+runTest('Test 11: Seating OCR Vision Validation checks', () => {
+  const invalidType = 'data:image/gif;base64,mockdata';
+  const invalidRes = validateScanRequest(invalidType);
+  assert.strictEqual(invalidRes.isValid, false, 'Should block non-jpeg/png/webp types');
+  assert.strictEqual(invalidRes.error, 'Unsupported image type: image/gif. Supported: image/jpeg, image/png, image/webp.');
+
+  const emptyRes = validateScanRequest('');
+  assert.strictEqual(emptyRes.isValid, false, 'Should block empty scan payload');
 });
 
 runTest('Test 12: Accessible Gate and Facilities Check', () => {
@@ -274,8 +280,14 @@ runTest('Test 19: Rate Limit Window Expiration Reset', () => {
   assert.ok(blocked.retryAfterMs > 0 && blocked.retryAfterMs <= 60000, 'Retry after should be within 1 min window');
 });
 
-runTest('Test 20: AI API Error Structure', () => {
-  assert.ok(true, 'AI Error Handling verified structurally in lib/gemini.ts try/catch block');
+runTest('Test 20: Chat request validation fields constraint', () => {
+  const invalidRes = validateChatRequest(null, {}, {});
+  assert.strictEqual(invalidRes.isValid, false, 'Should fail without a message string');
+  assert.strictEqual(invalidRes.error, 'Parameter "message" is required and must be a string.');
+
+  const oversizeMsg = 'a'.repeat(2001);
+  const sizeRes = validateChatRequest(oversizeMsg, {}, {});
+  assert.strictEqual(sizeRes.isValid, false, 'Should block oversize messages');
 });
 
 runTest('Test 21: Invalid Phase Transition Boundaries', () => {
@@ -290,6 +302,16 @@ runTest('Test 22: XSS Nested Bypasses against sanitize-html', () => {
   const clean = sanitizeInput(nestedXss);
   assert.ok(!clean.includes('<script>'), 'Nested script tag should be stripped');
   assert.ok(!clean.includes('<scr'), 'Incomplete tags should be stripped or escaped');
+});
+
+runTest('Test 23: Translation fallback verification', () => {
+  // Test invalid locale code fallbacks to English
+  const fallbackVal = t('chooseLanguage', 'invalid-locale');
+  assert.strictEqual(fallbackVal, 'Language Selector', 'Fallback should return English translation');
+  
+  // Test normal locale resolution
+  const normalVal = t('chooseLanguage', 'es');
+  assert.strictEqual(normalVal, 'Selector de idioma', 'Should fetch Spanish translation correctly');
 });
 
 // -----------------------------------------------------------------------------
@@ -316,6 +338,6 @@ if (results.failed > 0) {
   console.error('\n❌ Test execution failed: Critical regressions encountered.');
   process.exit(1);
 } else {
-  console.log('\n🎉 ALL 22 TEST CASES PASSED SUCCESSFULLY! 100% Core Logic Validated.');
+  console.log('\n🎉 ALL 23 TEST CASES PASSED SUCCESSFULLY! 100% Core Logic Validated.');
   process.exit(0);
 }

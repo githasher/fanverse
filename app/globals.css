@@ -500,3 +500,31 @@ a:focus-visible {
     rgba(0, 245, 255, 0.1)
   );
 }
+
+/* ============================================
+   High Contrast Mode Cascading Overrides
+   ============================================ */
+.high-contrast-mode {
+  --bg-primary: #000000 !important;
+  --bg-secondary: #08081a !important;
+  --accent-cyan: #00FFFF !important;
+  --accent-gold: #FFFF00 !important;
+  --accent-emerald: #00FF00 !important;
+  --accent-red: #FF0000 !important;
+  --glass-bg: rgba(0, 0, 0, 0.95) !important;
+  --glass-border: rgba(255, 255, 255, 0.6) !important;
+  --glass-bg-hover: rgba(255, 255, 255, 0.15) !important;
+  color-scheme: dark;
+}
+
+.high-contrast-mode * {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.high-contrast-mode .text-white\/60,
+.high-contrast-mode .text-white\/50,
+.high-contrast-mode .text-white\/40,
+.high-contrast-mode .text-emerald-100\/70,
+.high-contrast-mode .text-cyan-100\/70 {
+  color: #ffffff !important;
+}

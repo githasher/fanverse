@@ -46,22 +46,26 @@ function generateSparkline(values: number[], width: number, height: number): str
  * demand projections using simulation trend extrapolation.
  */
 function PredictiveAnalyticsComponent(): React.JSX.Element {
-  const stadiumState = useFanverseStore((s) => s.stadiumState);
+  const zones = useFanverseStore((s) => s.stadiumState.zones);
+  const gates = useFanverseStore((s) => s.stadiumState.gates);
+  const foodVendors = useFanverseStore((s) => s.stadiumState.foodVendors);
+  const transport = useFanverseStore((s) => s.stadiumState.transport);
+  const tick = useFanverseStore((s) => s.stadiumState.tick);
   const currentPhase = useFanverseStore((s) => s.currentPhase);
 
   const predictions = useMemo((): Prediction[] => {
     const avgCrowdDensity =
-      stadiumState.zones.reduce((sum, z) => sum + z.crowdDensity, 0) / stadiumState.zones.length;
+      zones.reduce((sum, z) => sum + z.crowdDensity, 0) / zones.length;
 
-    const busiestGate = [...stadiumState.gates]
+    const busiestGate = [...gates]
       .filter((g) => g.status === 'open')
       .sort((a, b) => b.crowdLevel - a.crowdLevel)[0];
 
     const avgFoodWait =
-      stadiumState.foodVendors.reduce((sum, v) => sum + v.waitMinutes, 0) /
-      stadiumState.foodVendors.length;
+      foodVendors.reduce((sum, v) => sum + v.waitMinutes, 0) /
+      foodVendors.length;
 
-    const rideshare = stadiumState.transport.rideshare;
+    const rideshare = transport.rideshare;
 
     return [
       {
@@ -119,18 +123,17 @@ function PredictiveAnalyticsComponent(): React.JSX.Element {
         impact: currentPhase === 'AFTER_MATCH' ? 'high' : 'low',
       },
     ];
-  }, [stadiumState, currentPhase]);
+  }, [zones, gates, foodVendors, transport, currentPhase]);
 
   /** Simulated sparkline data per prediction */
   const sparklineData = useMemo((): Record<string, number[]> => {
-    const tick = stadiumState.tick;
     return {
       'crowd-surge': Array.from({ length: 8 }, (_, i) => 40 + Math.sin((tick + i) * 0.3) * 20 + i * 3),
       'gate-forecast': Array.from({ length: 8 }, (_, i) => 5 + Math.sin((tick + i) * 0.5) * 4 + i * 0.5),
       'food-queue': Array.from({ length: 8 }, (_, i) => 3 + Math.cos((tick + i) * 0.4) * 3 + i * 0.8),
       'rideshare-surge': Array.from({ length: 8 }, (_, i) => 1 + Math.sin((tick + i) * 0.2) * 0.5 + i * 0.15),
     };
-  }, [stadiumState.tick]);
+  }, [tick]);
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable'): React.JSX.Element => {
     if (trend === 'up') return <TrendingUp className="w-3.5 h-3.5 text-rose-400" aria-hidden="true" />;

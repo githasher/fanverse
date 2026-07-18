@@ -13,16 +13,13 @@ import {
   Radio,
 } from 'lucide-react';
 
-/** Volunteer task assignment */
-interface VolunteerTask {
-  id: string;
-  title: string;
-  zone: string;
-  priority: 'urgent' | 'normal' | 'low';
-  assignee: string;
-  status: 'pending' | 'in-progress' | 'completed';
-  estimatedMinutes: number;
-}
+import type { VolunteerTask } from '@/types';
+import {
+  STAFF_GATE_CROWD_MODERATE,
+  STAFF_GATE_CROWD_SEVERE,
+  QUEUE_SENSORY_THRESHOLD,
+  STAFF_FOOD_WAIT_CRITICAL_MIN
+} from '@/lib/constants';
 
 /**
  * VolunteerHub — Staff-mode volunteer coordination dashboard.
@@ -44,14 +41,14 @@ function VolunteerHubComponent(): React.JSX.Element {
 
     // Generate crowd control tasks for busy gates
     for (const gate of stadiumState.gates) {
-      if (gate.crowdLevel > 0.75) {
+      if (gate.crowdLevel > STAFF_GATE_CROWD_MODERATE) {
         dynamicTasks.push({
           id: `task-${taskId++}`,
           title: `Crowd control at ${gate.name}`,
           zone: gate.name,
-          priority: gate.crowdLevel > 0.9 ? 'urgent' : 'normal',
+          priority: gate.crowdLevel > STAFF_GATE_CROWD_SEVERE ? 'urgent' : 'normal',
           assignee: `Volunteer ${taskId}`,
-          status: gate.crowdLevel > 0.9 ? 'in-progress' : 'pending',
+          status: gate.crowdLevel > STAFF_GATE_CROWD_SEVERE ? 'in-progress' : 'pending',
           estimatedMinutes: 15,
         });
       }
@@ -59,12 +56,12 @@ function VolunteerHubComponent(): React.JSX.Element {
 
     // Generate facility tasks for long queues
     for (const facility of stadiumState.facilities) {
-      if (facility.waitMinutes > 12 && facility.open) {
+      if (facility.waitMinutes > QUEUE_SENSORY_THRESHOLD && facility.open) {
         dynamicTasks.push({
           id: `task-${taskId++}`,
           title: `Queue management at ${facility.name}`,
           zone: facility.name,
-          priority: facility.waitMinutes > 20 ? 'urgent' : 'normal',
+          priority: facility.waitMinutes > STAFF_FOOD_WAIT_CRITICAL_MIN ? 'urgent' : 'normal',
           assignee: `Volunteer ${taskId + 5}`,
           status: 'pending',
           estimatedMinutes: 20,

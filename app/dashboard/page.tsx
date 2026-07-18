@@ -27,11 +27,16 @@ import { logger } from '@/lib/logger';
  * @returns ReactNode representing the dashboard page element.
  */
 export default function DashboardPage(): ReactNode {
-  // Drive the live stadium simulation
+  /** 
+   * Drive the live stadium simulation telemetry.
+   * isRunning is returned by the simulation hook to track status, and
+   * is used cosmetically in the page UI to display a live sensor sync heartbeat indicator.
+   */
   const { isRunning } = useSimulation();
   
   const activeView = useFanverseStore((state) => state.activeView);
   const userProfile = useFanverseStore((state) => state.userProfile);
+  const accessibilityMode = useFanverseStore((state) => state.accessibilityMode);
   const showEmergency = useFanverseStore((state) => state.showEmergency);
   const setShowEmergency = useFanverseStore((state) => state.setShowEmergency);
 
@@ -85,16 +90,18 @@ export default function DashboardPage(): ReactNode {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen w-screen overflow-hidden bg-[#0A0E27] text-white">
+      <div className={`flex h-screen w-screen overflow-hidden bg-[#0A0E27] text-white ${
+        accessibilityMode.highContrast ? 'high-contrast-mode' : ''
+      } ${accessibilityMode.largeText ? 'text-lg' : ''}`}>
         {/* Sidebar Navigation */}
         <Sidebar />
 
         {/* Main Content Area */}
-        <main id="main-content" className="flex-1 flex flex-col min-w-0 overflow-y-auto relative p-4 md:p-8">
+        <main id="main-content" aria-label="Dashboard content" className="flex-1 flex flex-col min-w-0 overflow-y-auto relative p-4 md:p-8">
           {/* Header bar */}
           <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold font-outfit tracking-tight capitalize text-white font-outfit">
+              <h1 className="text-xl md:text-2xl font-bold font-outfit tracking-tight capitalize text-white">
                 {activeView === 'dashboard'
                   ? (userProfile.role === 'staff'
                       ? t('operationsTitle', userProfile.language)

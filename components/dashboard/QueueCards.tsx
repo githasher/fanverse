@@ -48,37 +48,20 @@ export default function QueueCards(): React.JSX.Element {
     return recommendedFood.length > 0 ? recommendedFood : foodVendors;
   }, [recommendedFood, foodVendors]);
 
-  const handleNavigate = useCallback((name: string, zoneOrCuisine: string, type: 'food' | 'restroom') => {
+  const handleNavigate = useCallback((name: string) => {
     const now = Date.now();
     // Add User message asking for directions
     useFanverseStore.getState().addMessage({
       id: `nav-query-${now}`,
       role: 'user',
-      content: `How do I get to ${name}?`,
+      content: `How do I get to ${name}? Please provide walking directions.`,
       timestamp: now,
       type: 'text',
     });
 
     // Switch view to chat
     useFanverseStore.getState().setActiveView('chat');
-
-    // Simulate AI response for navigation directions
-    const isWheelchair = userProfile.accessibility.wheelchair;
-    setTimeout(() => {
-      const respTime = Date.now();
-      useFanverseStore.getState().addMessage({
-        id: `nav-answer-${respTime}`,
-        role: 'assistant',
-        content: `🧭 **Directions to ${name}:**\n\n1. From your current section, turn left and follow the main concourse corridor East.\n2. Proceed past the section entrance signs towards Section ${type === 'restroom' ? zoneOrCuisine : 'D'}.\n3. ${
-          isWheelchair
-            ? 'Take the Section F elevator down to the concourse floor.'
-            : 'Walk down the Section F stairwell to the concourse level.'
-        }\n4. ${name} is situated directly on the right (look for the illuminated signboard).\n\n*Estimated walking time: 3-5 minutes.*`,
-        timestamp: respTime,
-        type: 'route',
-      });
-    }, 800);
-  }, [userProfile.accessibility.wheelchair]);
+  }, []);
 
   const lowestRestroom = restrooms[0];
   const lowestFood = displayFood[0];
@@ -126,7 +109,7 @@ export default function QueueCards(): React.JSX.Element {
               return (
                 <div
                   key={vendor.id}
-                  onClick={() => handleNavigate(vendor.name, vendor.cuisine, 'food')}
+                  onClick={() => handleNavigate(vendor.name)}
                   className={`relative p-4 rounded-xl border flex flex-col justify-between h-[130px] hover:bg-white/5 cursor-pointer active:scale-[0.98] transition-all ${
                     isRecommended ? 'border-cyan-500/50 bg-cyan-500/5 shadow-lg shadow-cyan-500/5' : 'border-white/10 bg-white/0'
                   }`}
@@ -185,7 +168,7 @@ export default function QueueCards(): React.JSX.Element {
               return (
                 <div
                   key={fac.id}
-                  onClick={() => handleNavigate(fac.name, fac.zone, 'restroom')}
+                  onClick={() => handleNavigate(fac.name)}
                   className={`relative p-4 rounded-xl border flex flex-col justify-between h-[130px] hover:bg-white/5 cursor-pointer active:scale-[0.98] transition-all ${
                     isRecommended ? 'border-cyan-500/50 bg-cyan-500/5 shadow-lg shadow-cyan-500/5' : 'border-white/10 bg-white/0'
                   }`}

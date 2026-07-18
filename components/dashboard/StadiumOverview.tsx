@@ -11,6 +11,8 @@ import SustainabilityWidget from './SustainabilityWidget';
 import TransitBoard from './TransitBoard';
 import PredictiveAnalytics from './PredictiveAnalytics';
 
+import { STADIUM_CAPACITY } from '@/lib/constants';
+
 /**
  * StadiumOverview Dashboard Component.
  * Serves as the primary public fan view, mapping real-time derived stadium metrics
@@ -35,7 +37,7 @@ export default function StadiumOverview(): React.JSX.Element {
       : 0;
 
     const averageCrowdDensity = stadiumState.zones.reduce((acc, curr) => acc + curr.crowdDensity, 0) / stadiumState.zones.length;
-    const simulatedVisitors = Math.round(82500 * averageCrowdDensity);
+    const simulatedVisitors = Math.round(STADIUM_CAPACITY * averageCrowdDensity);
 
     return { totalGates, openGates, averageWaitTime, simulatedVisitors };
   }, [stadiumState.gates, stadiumState.facilities, stadiumState.zones]);

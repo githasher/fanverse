@@ -21,13 +21,15 @@ import {
 } from 'lucide-react';
 import VolunteerHub from './VolunteerHub';
 import PredictiveAnalytics from './PredictiveAnalytics';
-
-interface VolunteerTask {
-  id: string;
-  assignee: string;
-  task: string;
-  status: 'pending' | 'completed';
-}
+import type { VolunteerTask } from '@/types';
+import {
+  STAFF_GATE_CROWD_THRESHOLD,
+  STAFF_GATE_QUIET_THRESHOLD,
+  STAFF_FACILITY_WAIT_CRITICAL_MIN,
+  STAFF_FOOD_WAIT_CRITICAL_MIN,
+  STAFF_FOOD_WAIT_QUIET_MIN,
+  STAFF_RAIN_WARNING_THRESHOLD
+} from '@/lib/constants';
 
 /**
  * StaffCommand Dashboard Component.
@@ -67,16 +69,16 @@ export default function StaffCommand(): React.JSX.Element {
   const alerts = useMemo((): string[] => {
     const list: string[] = [];
     stadiumState.gates.forEach(gate => {
-      if (gate.crowdLevel > 0.8) {
+      if (gate.crowdLevel > STAFF_GATE_CROWD_THRESHOLD) {
         list.push(`Gate ${gate.name} is severely congested (${gate.waitMinutes} min wait).`);
       }
     });
     stadiumState.facilities.forEach(fac => {
-      if (fac.waitMinutes > 15) {
+      if (fac.waitMinutes > STAFF_FACILITY_WAIT_CRITICAL_MIN) {
         list.push(`${fac.name} queue wait time is critical (${fac.waitMinutes} mins).`);
       }
     });
-    if (stadiumState.weather.precipitation > 50) {
+    if (stadiumState.weather.precipitation > STAFF_RAIN_WARNING_THRESHOLD) {
       list.push(`Rain warning: ${stadiumState.weather.precipitation}% probability. Prep poncho distribution.`);
     }
     return list;
@@ -86,9 +88,9 @@ export default function StaffCommand(): React.JSX.Element {
   const aiDispatchDirectives = useMemo((): string[] => {
     const directives: string[] = [];
     stadiumState.gates.forEach(gate => {
-      if (gate.crowdLevel > 0.8) {
+      if (gate.crowdLevel > STAFF_GATE_CROWD_THRESHOLD) {
         // Find a quiet gate nearby to redirect to
-        const alternateGate = stadiumState.gates.find(g => g.status === 'open' && g.crowdLevel < 0.4);
+        const alternateGate = stadiumState.gates.find(g => g.status === 'open' && g.crowdLevel < STAFF_GATE_QUIET_THRESHOLD);
         if (alternateGate) {
           directives.push(
             `Congestion at Gate ${gate.name}: Dispatch 4 volunteers from Gate ${alternateGate.name} (wait time: ${alternateGate.waitMinutes}m) to set up overflow lanes and redirect arriving fans.`
@@ -97,8 +99,8 @@ export default function StaffCommand(): React.JSX.Element {
       }
     });
 
-    const foodOverload = stadiumState.foodVendors.find(v => v.waitMinutes > 20);
-    const quietFood = stadiumState.foodVendors.find(v => v.waitMinutes < 5);
+    const foodOverload = stadiumState.foodVendors.find(v => v.waitMinutes > STAFF_FOOD_WAIT_CRITICAL_MIN);
+    const quietFood = stadiumState.foodVendors.find(v => v.waitMinutes < STAFF_FOOD_WAIT_QUIET_MIN);
     if (foodOverload && quietFood) {
       directives.push(
         `High food queue at ${foodOverload.name}: Direct digital signboards at Section ${foodOverload.zone} to suggest alternative dining at ${quietFood.name} (only ${quietFood.waitMinutes} min wait).`

@@ -70,6 +70,8 @@ FANVERSE AI maps every phase of a match-day into logical, context-aware decision
 - **No Unused Imports**: All components and modules have been refactored to remove dead code and unused declarations.
 
 ### 2. Problem Statement Alignment & Logic (High Impact)
+- **Dual Operational Modes**: Users can switch between **Fan Mode** and **Operations Staff Mode** in settings. In staff mode, the Gemini AI system prompt shifts to act as a **Stadium Operations Coordinator**, assisting venue staff in answering operational, crowd control, and volunteer dispatch queries.
+- **GreenGoal™ Sustainability Gamification**: Features a carbon footprint savings widget. Fans accumulate GreenGoal Points (+50 PTS) for choosing public transport (NJ Transit Meadowlands Rail) or using recycling hubs in Sections F & K, gamifying carbon-conscious spectator behaviors.
 - **Emergency SOS Response System**: A dedicated [EmergencyPanel](file:///Users/rambhakranthi/Downloads/fanverse/components/dashboard/EmergencyPanel.tsx) overlay provides one-tap safety dispatching (medical, lost-child, security, evacuation) with context-aware guidance.
 - **Volunteer Coordination Hub**: A staff-only [VolunteerHub](file:///Users/rambhakranthi/Downloads/fanverse/components/dashboard/VolunteerHub.tsx) dynamically lists AI-prioritized task dispatches based on active gate crowd levels and queue sensor hotspots.
 - **AI Predictive Analytics**: A [PredictiveAnalytics](file:///Users/rambhakranthi/Downloads/fanverse/components/dashboard/PredictiveAnalytics.tsx) widget extrapolates current telemetry into forward-looking trends (crowd density spikes, queue length times, transport surge multipliers) with confidence levels and sparkline graphs.
@@ -89,7 +91,7 @@ FANVERSE AI maps every phase of a match-day into logical, context-aware decision
 
 ### 5. Testing & Validation (Low Impact)
 - **Automated Verification Suite**: Includes a dedicated TypeScript validation suite ([scripts/run-tests.ts](file:///Users/rambhakranthi/Downloads/fanverse/scripts/run-tests.ts)) confirming initial state creation, simulation engine ticks, phase transition overflows, dietary filtering rules, rate limiting, and sanitization.
-- **Command**: Run the 18 tests easily using `npm run test`.
+- **Command**: Run the 22 tests easily using `npm run test`.
 
 ### 6. Accessibility & Inclusive Design (Low Impact)
 - **WCAG 2.1 Compliance**: Skip-to-content links added to layouts for keyboard-only visitors.
