@@ -26,7 +26,7 @@ interface WebSpeechRecognition {
  * @param state The live Zustand StadiumState object.
  * @returns A pruned StadiumState structure matching backend tool schema needs.
  */
-function pruneStadiumState(state: StadiumState): Partial<StadiumState> {
+function pruneStadiumState(state: StadiumState): Record<string, unknown> {
   return {
     weather: state.weather,
     transport: state.transport,
@@ -57,7 +57,7 @@ function pruneStadiumState(state: StadiumState): Partial<StadiumState> {
       waitMinutes: v.waitMinutes,
       dietaryTags: v.dietaryTags,
     })),
-  };
+  } as unknown as Record<string, unknown>;
 }
 
 /**

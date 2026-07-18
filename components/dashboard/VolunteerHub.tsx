@@ -93,7 +93,9 @@ function VolunteerHubComponent(): React.JSX.Element {
 
     return dynamicTasks.sort((a, b) => {
       const priorityOrder = { urgent: 0, normal: 1, low: 2 };
-      return priorityOrder[a.priority] - priorityOrder[b.priority];
+      const aPriority = a.priority ?? 'normal';
+      const bPriority = b.priority ?? 'normal';
+      return priorityOrder[aPriority] - priorityOrder[bPriority];
     });
   }, [stadiumState.gates, stadiumState.facilities]);
 
@@ -106,14 +108,15 @@ function VolunteerHubComponent(): React.JSX.Element {
   }, [tasks]);
 
   const getPriorityBadge = (priority: VolunteerTask['priority']): React.JSX.Element => {
+    const activePriority = priority ?? 'normal';
     const styles: Record<string, string> = {
       urgent: 'bg-rose-500/15 text-rose-400 border-rose-500/20',
       normal: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
       low: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
     };
     return (
-      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${styles[priority]}`}>
-        {priority}
+      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${styles[activePriority]}`}>
+        {activePriority}
       </span>
     );
   };

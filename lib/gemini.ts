@@ -286,7 +286,7 @@ Respond helpfully and concisely in the user's preferred language. Use the 'getSt
   let response = await client.models.generateContent({
     model: MODEL_ID,
     contents,
-    config,
+    config: config as any,
   });
 
   // Handle consecutive function calls in a loop (up to a limit of 5 to avoid infinite loops)
@@ -294,6 +294,7 @@ Respond helpfully and concisely in the user's preferred language. Use the 'getSt
   while (response.functionCalls && response.functionCalls.length > 0 && loopCount < 5) {
     loopCount++;
     const call = response.functionCalls[0];
+    if (!call) break;
     const args = call.args as { dataType: string };
     let resultData: unknown = {};
 
@@ -326,7 +327,7 @@ Respond helpfully and concisely in the user's preferred language. Use the 'getSt
     response = await client.models.generateContent({
       model: MODEL_ID,
       contents,
-      config,
+      config: config as any,
     });
   }
 
