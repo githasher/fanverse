@@ -4,11 +4,24 @@ import React from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { Cloud, CloudRain, Sun, Wind, Droplets, AlertTriangle } from 'lucide-react';
 
-export default function WeatherWidget() {
+/**
+ * WeatherWidget Dashboard Component.
+ * Displays real-time outdoor weather sensor stats (wind speed, rain risk, humidity, UV index)
+ * and issues warning alerts for rain or high winds.
+ *
+ * @returns React.JSX.Element representing the weather status card.
+ */
+function WeatherWidget(): React.JSX.Element {
   const stadiumState = useFanverseStore((state) => state.stadiumState);
   const { weather } = stadiumState;
 
-  const getWeatherIcon = (condition: string) => {
+  /**
+   * Helper to resolve the appropriate animated weather icon.
+   *
+   * @param condition The weather state (sunny, rain, cloudy, etc.).
+   * @returns React.JSX.Element corresponding to the weather icon.
+   */
+  const getWeatherIcon = (condition: string): React.JSX.Element => {
     switch (condition) {
       case 'sunny':
       case 'clear':
@@ -93,3 +106,5 @@ export default function WeatherWidget() {
     </div>
   );
 }
+
+export default React.memo(WeatherWidget);

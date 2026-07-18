@@ -15,6 +15,7 @@ import type {
   AccessibilityMode,
 } from '@/types';
 import { createInitialStadiumState } from './stadiumData';
+import { PHASE_ORDER } from './simulation';
 
 // -----------------------------------------------------------------------------
 // Store interface
@@ -233,15 +234,8 @@ export const useFanverseStore = create<FanverseStore>((set) => ({
       userProfile: { ...state.userProfile, matchDayPhase: phase },
       // Update timeline statuses based on phase
       timeline: state.timeline.map((event) => {
-        const phaseOrder = [
-          'BEFORE_MATCH',
-          'ENTERING',
-          'INSIDE',
-          'HALFTIME',
-          'AFTER_MATCH',
-        ] as MatchDayPhase[];
-        const currentIdx = phaseOrder.indexOf(phase);
-        const eventIdx = phaseOrder.indexOf(event.phase);
+        const currentIdx = PHASE_ORDER.indexOf(phase);
+        const eventIdx = PHASE_ORDER.indexOf(event.phase);
 
         if (eventIdx < currentIdx) return { ...event, status: 'completed' as const };
         if (eventIdx === currentIdx) return { ...event, status: 'current' as const };

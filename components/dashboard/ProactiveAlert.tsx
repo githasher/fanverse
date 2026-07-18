@@ -6,7 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bell, Shield, CloudRain, Clock, AlertOctagon } from 'lucide-react';
 import type { NotificationType } from '@/types';
 
-export default function ProactiveAlert() {
+/**
+ * ProactiveAlert Component.
+ * Monitors the Zustand store notification array to render a stacked list
+ * of real-time sensory alerts sliding in from the top-right corner.
+ *
+ * @returns React.JSX.Element representing stacked toast notifications.
+ */
+function ProactiveAlert(): React.JSX.Element {
   const notifications = useFanverseStore((state) => state.notifications);
   const markNotificationRead = useFanverseStore((state) => state.markNotificationRead);
 
@@ -94,3 +101,5 @@ export default function ProactiveAlert() {
     </div>
   );
 }
+
+export default React.memo(ProactiveAlert);

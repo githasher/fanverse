@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useFanverseStore } from '@/lib/store';
 import {
   ShieldAlert,
@@ -27,8 +27,16 @@ interface VolunteerTask {
   status: 'pending' | 'completed';
 }
 
-export default function StaffCommand() {
-  const { stadiumState, addNotification } = useFanverseStore();
+/**
+ * StaffCommand Dashboard Component.
+ * Operations panel for organizers and volunteers. Shows real-time warnings,
+ * dispatch logs, and manual volunteer task assignments.
+ *
+ * @returns React.JSX.Element representing the staff operations view.
+ */
+export default function StaffCommand(): React.JSX.Element {
+  const stadiumState = useFanverseStore((state) => state.stadiumState);
+  const addNotification = useFanverseStore((state) => state.addNotification);
   const [tasks, setTasks] = useState<VolunteerTask[]>([
     {
       id: 'v1',
@@ -53,24 +61,27 @@ export default function StaffCommand() {
   const [newAssignee, setNewAssignee] = useState('');
   const [newRequirement, setNewRequirement] = useState('');
 
-  // 1. Identify critical alerts dynamically from sensor states
-  const alerts: string[] = [];
-  stadiumState.gates.forEach(gate => {
-    if (gate.crowdLevel > 0.8) {
-      alerts.push(`Gate ${gate.name} is severely congested (${gate.waitMinutes} min wait).`);
+  // 1. Identify critical alerts dynamically from sensor states (useMemo for optimal render execution)
+  const alerts = useMemo((): string[] => {
+    const list: string[] = [];
+    stadiumState.gates.forEach(gate => {
+      if (gate.crowdLevel > 0.8) {
+        list.push(`Gate ${gate.name} is severely congested (${gate.waitMinutes} min wait).`);
+      }
+    });
+    stadiumState.facilities.forEach(fac => {
+      if (fac.waitMinutes > 15) {
+        list.push(`${fac.name} queue wait time is critical (${fac.waitMinutes} mins).`);
+      }
+    });
+    if (stadiumState.weather.precipitation > 50) {
+      list.push(`Rain warning: ${stadiumState.weather.precipitation}% probability. Prep poncho distribution.`);
     }
-  });
-  stadiumState.facilities.forEach(fac => {
-    if (fac.waitMinutes > 15) {
-      alerts.push(`${fac.name} queue wait time is critical (${fac.waitMinutes} mins).`);
-    }
-  });
-  if (stadiumState.weather.precipitation > 50) {
-    alerts.push(`Rain warning: ${stadiumState.weather.precipitation}% probability. Prep poncho distribution.`);
-  }
+    return list;
+  }, [stadiumState.gates, stadiumState.facilities, stadiumState.weather.precipitation]);
 
-  // 2. Calculate AI dispatch directives based on alerts
-  const getAIDispatchDirectives = () => {
+  // 2. Calculate AI dispatch directives based on alerts (useMemo for optimal render execution)
+  const aiDispatchDirectives = useMemo((): string[] => {
     const directives: string[] = [];
     stadiumState.gates.forEach(gate => {
       if (gate.crowdLevel > 0.8) {
@@ -96,9 +107,9 @@ export default function StaffCommand() {
       directives.push('All systems operating normally. Monitor gates for pre-kickoff surges.');
     }
     return directives;
-  };
+  }, [stadiumState.gates, stadiumState.foodVendors]);
 
-  const handleCreateTask = (e: React.FormEvent) => {
+  const handleCreateTask = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!newAssignee.trim() || !newRequirement.trim()) return;
 
@@ -109,7 +120,7 @@ export default function StaffCommand() {
       status: 'pending'
     };
 
-    setTasks([newTask, ...tasks]);
+    setTasks(prev => [newTask, ...prev]);
     setNewAssignee('');
     setNewRequirement('');
 
@@ -122,16 +133,19 @@ export default function StaffCommand() {
       timestamp: Date.now(),
       read: false
     });
-  };
+  }, [newAssignee, newRequirement, addNotification]);
 
-  const toggleTaskStatus = (id: string) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, status: t.status === 'completed' ? 'pending' : 'completed' } : t));
-  };
+  const toggleTaskStatus = useCallback((id: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: t.status === 'completed' ? 'pending' : 'completed' } : t));
+  }, []);
 
   // Operations stats
-  const averageGateWait = Math.round(
-    stadiumState.gates.reduce((acc, curr) => acc + curr.waitMinutes, 0) / stadiumState.gates.length
-  );
+  const averageGateWait = useMemo((): number => {
+    if (stadiumState.gates.length === 0) return 0;
+    return Math.round(
+      stadiumState.gates.reduce((acc, curr) => acc + curr.waitMinutes, 0) / stadiumState.gates.length
+    );
+  }, [stadiumState.gates]);
 
   return (
     <div className="space-y-6">
@@ -220,7 +234,7 @@ export default function StaffCommand() {
           </h2>
 
           <div className="mt-4 space-y-4">
-            {getAIDispatchDirectives().map((dir, index) => (
+            {aiDispatchDirectives.map((dir, index) => (
               <div
                 key={index}
                 className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20 flex gap-3 items-start relative overflow-hidden"

@@ -1,10 +1,42 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { Camera, Upload, AlertCircle, FileText, CheckCircle } from 'lucide-react';
-import type { TicketInfo } from '@/types';
+import type { TicketInfo, ChatMessage } from '@/types';
 
+/** MetLife Mock Ticket specifications for hackathon demo runs */
+const MOCK_TICKET: TicketInfo = {
+  matchId: 'WC2026-F1',
+  section: '124',
+  row: '10',
+  seat: '4',
+  gate: 'Gate A — East Main',
+  matchName: 'Argentina vs France — FIFA Final',
+  date: 'July 19, 2026',
+  time: '17:00',
+};
+
+/**
+ * Builds standard ChatMessage structure upon successful ticket scanning.
+ *
+ * @param ticket Seating details for the match.
+ * @returns ChatMessage object matching types specifications.
+ */
+const generateSuccessMessage = (ticket: TicketInfo): ChatMessage => ({
+  id: `ticket-nav-${Date.now()}`,
+  role: 'assistant',
+  content: `🎫 **Ticket Scanned Successfully!**\n\nI've found your seat details for the match **${ticket.matchName}**:\n• **Section:** ${ticket.section}\n• **Row:** ${ticket.row}\n• **Seat:** ${ticket.seat}\n• **Gate Recommendation:** ${ticket.gate}\n\nWould you like me to map the optimal route from your current location? (Select "Nearest restroom" or ask "where to eat" to explore options near Section ${ticket.section}).`,
+  timestamp: Date.now(),
+  type: 'ticket',
+});
+
+/**
+ * Dashboard component for scanning user tickets.
+ * Utilizes base64 OCR parsing from Gemini Vision to dynamically load user seat location.
+ *
+ * @returns React element representing the ticket scanner layout.
+ */
 export default function TicketScanner() {
   const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,31 +58,15 @@ export default function TicketScanner() {
     }
   };
 
-  const processImage = async (base64: string) => {
+  const processImage = useCallback(async (base64: string) => {
     setLoading(true);
     setError(null);
     try {
       // Bypassing real API call for local mock ticket generation (hackathon demo check)
       if (base64 === 'data:image/jpeg;base64,mockdata') {
         await new Promise((resolve) => setTimeout(resolve, 1200)); // realistic latency
-        const fallbackTicket: TicketInfo = {
-          matchId: 'WC2026-F1',
-          section: '124',
-          row: '10',
-          seat: '4',
-          gate: 'Gate A — East Main',
-          matchName: 'Argentina vs France — FIFA Final',
-          date: 'July 19, 2026',
-          time: '17:00',
-        };
-        updateUserProfile({ ticket: fallbackTicket });
-        addMessage({
-          id: `ticket-nav-${Date.now()}`,
-          role: 'assistant',
-          content: `🎫 **Ticket Scanned Successfully!**\n\nI've found your seat details for the match **${fallbackTicket.matchName}**:\n• **Section:** ${fallbackTicket.section}\n• **Row:** ${fallbackTicket.row}\n• **Seat:** ${fallbackTicket.seat}\n• **Gate Recommendation:** ${fallbackTicket.gate}\n\nWould you like me to map the optimal route from your current location? (Select "Nearest restroom" or ask "where to eat" to explore options near Section ${fallbackTicket.section}).`,
-          timestamp: Date.now(),
-          type: 'ticket',
-        });
+        updateUserProfile({ ticket: MOCK_TICKET });
+        addMessage(generateSuccessMessage(MOCK_TICKET));
         setLoading(false);
         return;
       }
@@ -73,34 +89,28 @@ export default function TicketScanner() {
       updateUserProfile({ ticket: data.ticket });
 
       // Automatically send a greeting message from the AI with navigation details
-      addMessage({
-        id: `ticket-nav-${Date.now()}`,
-        role: 'assistant',
-        content: `🎫 **Ticket Scanned Successfully!**\n\nI've found your seat details for the match **${data.ticket.matchName}**:\n• **Section:** ${data.ticket.section}\n• **Row:** ${data.ticket.row}\n• **Seat:** ${data.ticket.seat}\n• **Gate Recommendation:** ${data.ticket.gate}\n\nWould you like me to map the optimal route from your current location? (Select "Nearest restroom" or ask "where to eat" to explore options near Section ${data.ticket.section}).`,
-        timestamp: Date.now(),
-        type: 'ticket',
-      });
+      addMessage(generateSuccessMessage(data.ticket));
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       console.error('Scan processing error:', err);
       setError(`Failed to extract ticket info: ${errorMsg || 'Vision limits exceeded'}. Using mock fallback.`);
       
       // Fallback ticket
-      const fallbackTicket: TicketInfo = {
-        matchId: 'WC2026-F1',
-        section: '124',
-        row: '10',
-        seat: '4',
-        gate: 'Gate A — East Main',
-        matchName: 'Argentina vs France — FIFA Final',
-        date: 'July 19, 2026',
-        time: '17:00',
-      };
-      updateUserProfile({ ticket: fallbackTicket });
+      updateUserProfile({ ticket: MOCK_TICKET });
     } finally {
       setLoading(false);
     }
-  };
+  }, [updateUserProfile, addMessage]);
+
+  const handleFileProcess = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setPreview(result);
+      processImage(result);
+    };
+    reader.readAsDataURL(file);
+  }, [processImage]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -108,36 +118,22 @@ export default function TicketScanner() {
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setPreview(result);
-        processImage(result);
-      };
-      reader.readAsDataURL(file);
+      handleFileProcess(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setPreview(result);
-        processImage(result);
-      };
-      reader.readAsDataURL(file);
+      handleFileProcess(e.target.files[0]);
     }
   };
 
   // Mock Upload trigger for rapid testing in hackathon demos
-  const triggerMockScan = () => {
+  const triggerMockScan = useCallback(() => {
     const mockTicketBase64 = 'data:image/jpeg;base64,mockdata';
     setPreview(mockTicketBase64);
     processImage(mockTicketBase64);
-  };
+  }, [processImage]);
 
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 md:p-6 space-y-6">

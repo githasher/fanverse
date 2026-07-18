@@ -71,7 +71,7 @@ const PHASE_DURATION_TICKS: Record<MatchDayPhase, number> = {
   AFTER_MATCH: 40,  // ~2 min
 };
 
-const PHASE_ORDER: MatchDayPhase[] = [
+export const PHASE_ORDER: MatchDayPhase[] = [
   'BEFORE_MATCH',
   'ENTERING',
   'INSIDE',

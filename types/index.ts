@@ -46,7 +46,8 @@ export type FacilityType =
   | 'baby_care'
   | 'atm'
   | 'information'
-  | 'water_station';
+  | 'water_station'
+  | 'recycling';
 
 /** Gate operational status */
 export type GateStatus = 'open' | 'closed' | 'restricted';

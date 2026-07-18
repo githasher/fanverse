@@ -1,34 +1,45 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { motion, type Variants } from 'framer-motion';
 import { Users, Clock, DoorOpen, CloudSun, TrendingDown, ArrowUpRight } from 'lucide-react';
 import QueueCards from './QueueCards';
 import GateStatus from './GateStatus';
 import WeatherWidget from './WeatherWidget';
+import SustainabilityWidget from './SustainabilityWidget';
+import TransitBoard from './TransitBoard';
 
-export default function StadiumOverview() {
+/**
+ * StadiumOverview Dashboard Component.
+ * Serves as the primary public fan view, mapping real-time derived stadium metrics
+ * (total active visitors, average queue wait times, open security gates, live weather conditions),
+ * and integrating sustainability widgets.
+ *
+ * @returns React.JSX.Element representing the core dashboard overview.
+ */
+export default function StadiumOverview(): React.JSX.Element {
   const stadiumState = useFanverseStore((state) => state.stadiumState);
   const userProfile = useFanverseStore((state) => state.userProfile);
   const setActiveView = useFanverseStore((state) => state.setActiveView);
 
-  // Derive summary metrics from the live stadiumState
-  const totalGates = stadiumState.gates.length;
-  const openGates = stadiumState.gates.filter((g) => g.status === 'open').length;
+  // Derive summary metrics from the live stadiumState using useMemo for render efficiency
+  const derivedStats = useMemo(() => {
+    const totalGates = stadiumState.gates.length;
+    const openGates = stadiumState.gates.filter((g) => g.status === 'open').length;
 
-  const averageWaitTime = Math.round(
-    stadiumState.facilities
-      .filter((f) => f.type === 'restroom' || f.type === 'food')
-      .reduce((acc, curr) => acc + curr.waitMinutes, 0) /
-      stadiumState.facilities.filter((f) => f.type === 'restroom' || f.type === 'food').length
-  );
+    const waitFacilities = stadiumState.facilities.filter((f) => f.type === 'restroom' || f.type === 'food');
+    const averageWaitTime = waitFacilities.length > 0
+      ? Math.round(waitFacilities.reduce((acc, curr) => acc + curr.waitMinutes, 0) / waitFacilities.length)
+      : 0;
 
-  // Simulated total people inside the stadium bowl (MetLife Stadium cap: 82,500)
-  const averageCrowdDensity =
-    stadiumState.zones.reduce((acc, curr) => acc + curr.crowdDensity, 0) /
-    stadiumState.zones.length;
-  const simulatedVisitors = Math.round(82500 * averageCrowdDensity);
+    const averageCrowdDensity = stadiumState.zones.reduce((acc, curr) => acc + curr.crowdDensity, 0) / stadiumState.zones.length;
+    const simulatedVisitors = Math.round(82500 * averageCrowdDensity);
+
+    return { totalGates, openGates, averageWaitTime, simulatedVisitors };
+  }, [stadiumState.gates, stadiumState.facilities, stadiumState.zones]);
+
+  const { totalGates, openGates, averageWaitTime, simulatedVisitors } = derivedStats;
 
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -173,6 +184,11 @@ export default function StadiumOverview() {
         </motion.div>
       </motion.div>
 
+      {/* Transit Connection Board */}
+      <motion.div variants={itemVariants}>
+        <TransitBoard stadiumState={stadiumState} />
+      </motion.div>
+
       {/* Main Grid: Map / Gate status & queues */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Left column: Gate Status & Weather */}
@@ -202,6 +218,7 @@ export default function StadiumOverview() {
 
         {/* Right column: Weather detailed & Assistant twin preview */}
         <div className="space-y-6">
+          <SustainabilityWidget stadiumState={stadiumState} />
           <WeatherWidget />
 
           {/* Interactive map prompt */}

@@ -1,23 +1,33 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { DoorClosed, Clock } from 'lucide-react';
+import { getSensoryBgColor } from '@/lib/utils';
 
-export default function GateStatus() {
+/**
+ * GateStatus Dashboard Component.
+ * Renders MetLife Stadium security gate statuses, crowd capacities, wait times,
+ * and highlights recommended gates to enter.
+ *
+ * @returns React.JSX.Element representing security gate lists.
+ */
+function GateStatus(): React.JSX.Element {
   const stadiumState = useFanverseStore((state) => state.stadiumState);
 
-  // Find recommended gate (open, lowest crowd level)
-  const openGates = stadiumState.gates.filter((g) => g.status === 'open');
-  const recommendedGate = openGates.sort((a, b) => a.crowdLevel - b.crowdLevel)[0];
+  // Find recommended gate (open, lowest crowd level) using useMemo for render efficiency
+  const recommendedGate = useMemo(() => {
+    const openGates = stadiumState.gates.filter((g) => g.status === 'open');
+    return [...openGates].sort((a, b) => a.crowdLevel - b.crowdLevel)[0];
+  }, [stadiumState.gates]);
 
-  const getCapacityColor = (level: number) => {
-    if (level < 0.4) return 'bg-emerald-500';
-    if (level < 0.75) return 'bg-amber-500';
-    return 'bg-rose-500';
-  };
-
-  const getStatusBadge = (status: string) => {
+  /**
+   * Helper to return CSS styles for security gate state indicators.
+   *
+   * @param status Active gate status (open, restricted, closed).
+   * @returns string CSS styles.
+   */
+  const getStatusBadge = (status: string): string => {
     switch (status) {
       case 'open':
         return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
@@ -90,7 +100,7 @@ export default function GateStatus() {
                   </div>
                   <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                     <div
-                      className={`h-full ${getCapacityColor(gate.crowdLevel)}`}
+                      className={`h-full ${getSensoryBgColor(gate.crowdLevel)}`}
                       style={{ width: `${gate.crowdLevel * 100}%` }}
                     />
                   </div>
@@ -120,3 +130,5 @@ export default function GateStatus() {
     </div>
   );
 }
+
+export default React.memo(GateStatus);

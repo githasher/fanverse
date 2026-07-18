@@ -5,8 +5,16 @@ import { useFanverseStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Info, Compass } from 'lucide-react';
 import type { Zone, Facility, FoodVendor } from '@/types';
+import { getSensorySvgColor } from '@/lib/utils';
 
-export default function StadiumMap() {
+/**
+ * StadiumMap Dashboard Component.
+ * Renders an interactive SVG Digital Twin map of MetLife Stadium.
+ * Highlights section-by-section crowd densities, gate coordinates, and facilities.
+ *
+ * @returns React.JSX.Element representing the interactive stadium layout.
+ */
+export default function StadiumMap(): React.JSX.Element {
   const stadiumState = useFanverseStore((state) => state.stadiumState);
   const userProfile = useFanverseStore((state) => state.userProfile);
 
@@ -16,14 +24,13 @@ export default function StadiumMap() {
 
   const { zones, facilities, foodVendors } = stadiumState;
 
-  // Determine heatmap color based on density
-  const getDensityColor = (density: number) => {
-    if (density < 0.3) return 'fill-emerald-500/20 stroke-emerald-500/30';
-    if (density < 0.65) return 'fill-amber-500/20 stroke-amber-500/30';
-    return 'fill-rose-500/30 stroke-rose-500/50';
-  };
-
-  const getDensityText = (density: number) => {
+  /**
+   * Helper to return standard user-facing text labels representing zone crowd density.
+   *
+   * @param density Active zone crowd density.
+   * @returns string crowd density classification.
+   */
+  const getDensityText = (density: number): string => {
     if (density < 0.3) return '🟢 Low Crowd';
     if (density < 0.65) return '🟡 Moderate Crowd';
     return '🔴 High Crowd Density';
@@ -105,7 +112,7 @@ export default function StadiumMap() {
                     cx={cx}
                     cy={cy}
                     r="4"
-                    className={`transition-colors ${getDensityColor(zone.crowdDensity)}`}
+                    className={`transition-colors ${getSensorySvgColor(zone.crowdDensity)}`}
                   />
                   {/* Small text section marker */}
                   <text

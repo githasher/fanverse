@@ -11,14 +11,24 @@ import type { StadiumState, UserProfile, TicketInfo, ChatMessage } from '@/types
 // -----------------------------------------------------------------------------
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+let cachedClient: GoogleGenAI | null = null;
 
+/**
+ * Instantiates or retrieves the cached GoogleGenAI client singleton.
+ * Validates API key presence at execution time.
+ *
+ * @returns GoogleGenAI client instance.
+ */
 function getClient(): GoogleGenAI {
   if (!GEMINI_API_KEY) {
     throw new Error(
       'GEMINI_API_KEY is not set. Add it to .env.local or your environment.'
     );
   }
-  return new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  if (!cachedClient) {
+    cachedClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  }
+  return cachedClient;
 }
 
 const MODEL_ID = 'gemini-3.5-flash';
@@ -48,6 +58,7 @@ Depending on the user's active role, your personality and assistance focus shift
 - **Proactive**: Don't just answer questions — anticipate needs. If someone asks about their seat, also mention the nearest restroom and food options.
 - **Contextual**: Use the current match phase, weather, and crowd data to give timely advice. At halftime, suggest the shortest food queues. Before the match, guide them to the best gate.
 - **Inclusive**: Be mindful of accessibility needs. If a user has wheelchair access, always suggest accessible routes, gates, and facilities.
+- **Sustainability-Focused**: Encourage fans to use GreenGoal recycling hubs (located in Sections F & K) and to prioritize transit (NJ Transit metro) to minimize carbon emissions. Suggest hydration stations to reduce plastic.
 - **World Cup Spirit**: This is the biggest sporting event on earth! Match the excitement while being helpful. Use ⚽ and 🏟️ occasionally.
 - **Concise**: Keep responses focused and actionable. Use bullet points for multiple options. Don't overwhelm with data.
 - **Safety-First**: For emergencies or medical issues, always prioritise directing to the nearest medical station and stadium security.
@@ -254,10 +265,13 @@ Respond helpfully and concisely in the user's preferred language. Use the live d
   return response.text?.trim() ?? 'I apologise — I wasn\'t able to generate a response. Please try again.';
 }
 
-// -----------------------------------------------------------------------------
-// Context builder — distils StadiumState into a concise text block
-// -----------------------------------------------------------------------------
-
+/**
+ * Condenses the complete, real-time StadiumState sensor telemetry
+ * into a concise text block for injection into the Gemini system context.
+ *
+ * @param state The live StadiumState values.
+ * @returns string formatted summary log.
+ */
 function buildContextSummary(state: StadiumState): string {
   const { gates, zones, facilities, foodVendors, weather, transport, phase } = state;
 

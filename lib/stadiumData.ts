@@ -196,6 +196,10 @@ export const INITIAL_FACILITIES: Facility[] = [
 
   // Information (1)
   { id: 'info-1', name: 'Fan Information Desk', type: 'information', position: { x: 50, y: 50 }, zone: 'A', queueLength: 3, waitMinutes: 5, accessible: true, open: true },
+
+  // Sustainability & Recycling Hubs (2)
+  { id: 'recycle-1', name: 'GreenGoal Recycling Hub — East', type: 'recycling', position: { x: 74, y: 55 }, zone: 'K', queueLength: 0, waitMinutes: 0, accessible: true, open: true },
+  { id: 'recycle-2', name: 'GreenGoal Recycling Hub — West', type: 'recycling', position: { x: 26, y: 45 }, zone: 'F', queueLength: 0, waitMinutes: 0, accessible: true, open: true },
 ];
 
 // -----------------------------------------------------------------------------

@@ -200,8 +200,8 @@ export default function ChatInterface() {
                     
                     // Match bold markdown tags **text**
                     const boldRegex = /\*\*(.*?)\*\*/g;
-                    if (boldRegex.test(line)) {
-                      const parts = line.split(boldRegex);
+                    const parts = line.split(boldRegex);
+                    if (parts.length > 1) {
                       return (
                         <div key={lIdx}>
                           {parts.map((part, pIdx) =>

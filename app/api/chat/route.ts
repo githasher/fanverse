@@ -1,13 +1,24 @@
 import { NextResponse } from 'next/server';
 import { getSmartResponse } from '@/lib/gemini';
+import { validateChatRequest } from '@/lib/validation';
 
-export async function POST(req: Request) {
+/**
+ * Handles incoming chat messages from the user dashboard.
+ * Merges match-day stadium sensory context, maps chat history,
+ * and executes Gemini 3.5 Flash queries.
+ *
+ * @param req Incoming HTTP Request containing message, stadiumState, userProfile, and history.
+ * @returns Promise<NextResponse> containing the AI response text or validation error.
+ */
+export async function POST(req: Request): Promise<NextResponse> {
   try {
-    const { message, stadiumState, userProfile, history } = await req.json();
+    const body = await req.json();
+    const { message, stadiumState, userProfile, history } = body;
 
-    if (!message || !stadiumState || !userProfile) {
+    const validation = validateChatRequest(message, stadiumState, userProfile);
+    if (!validation.isValid) {
       return NextResponse.json(
-        { error: 'Missing required parameters: message, stadiumState, userProfile' },
+        { error: validation.error || 'Bad Request' },
         { status: 400 }
       );
     }

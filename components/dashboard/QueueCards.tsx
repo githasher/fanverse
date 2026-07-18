@@ -1,45 +1,56 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Coffee, User, Clock, Award } from 'lucide-react';
 import type { FoodVendor } from '@/types';
+import { getSensoryStatusColor } from '@/lib/utils';
 
-export default function QueueCards() {
+/**
+ * QueueCards Dashboard Component.
+ * Displays wait times and line sizes for MetLife food vendors and restrooms.
+ * Automatically recommends the shortest queues utilizing user dietary tags.
+ *
+ * @returns React.JSX.Element representing queue lists.
+ */
+export default function QueueCards(): React.JSX.Element {
   const stadiumState = useFanverseStore((state) => state.stadiumState);
   const userProfile = useFanverseStore((state) => state.userProfile);
   const [activeTab, setActiveTab] = useState<'restroom' | 'food'>('food');
 
-  // Filter facilities/vendors
-  const restrooms = stadiumState.facilities
-    .filter((f) => f.type === 'restroom' && f.open)
-    .sort((a, b) => a.waitMinutes - b.waitMinutes);
+  // Filter facilities/vendors with useMemo for optimal render execution
+  const restrooms = useMemo(() => {
+    return stadiumState.facilities
+      .filter((f) => f.type === 'restroom' && f.open)
+      .sort((a, b) => a.waitMinutes - b.waitMinutes);
+  }, [stadiumState.facilities]);
 
-  const foodVendors = stadiumState.foodVendors
-    .filter((v) => v.open)
-    .sort((a, b) => a.waitMinutes - b.waitMinutes);
+  const foodVendors = useMemo(() => {
+    return stadiumState.foodVendors
+      .filter((v) => v.open)
+      .sort((a, b) => a.waitMinutes - b.waitMinutes);
+  }, [stadiumState.foodVendors]);
 
   // Apply user profile filters for recommendations
-  const matchDiet = (vendor: FoodVendor) => {
+  const matchDiet = useCallback((vendor: FoodVendor): boolean => {
     if (userProfile.preferences.dietaryRestrictions.length === 0) return true;
     return userProfile.preferences.dietaryRestrictions.some((tag) =>
       vendor.dietaryTags.includes(tag)
     );
-  };
+  }, [userProfile.preferences.dietaryRestrictions]);
 
-  const recommendedFood = foodVendors.filter(matchDiet);
-  const displayFood = recommendedFood.length > 0 ? recommendedFood : foodVendors;
+  const recommendedFood = useMemo(() => {
+    return foodVendors.filter(matchDiet);
+  }, [foodVendors, matchDiet]);
+
+  const displayFood = useMemo(() => {
+    return recommendedFood.length > 0 ? recommendedFood : foodVendors;
+  }, [recommendedFood, foodVendors]);
 
   // Determine the lowest wait restrooms
   const lowestRestroom = restrooms[0];
   const lowestFood = displayFood[0];
-
-  const getWaitColor = (minutes: number) => {
-    if (minutes <= 5) return 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5';
-    if (minutes <= 12) return 'text-amber-400 border-amber-500/20 bg-amber-500/5';
-    return 'text-rose-400 border-rose-500/20 bg-rose-500/5';
-  };
 
 
 
@@ -105,7 +116,7 @@ export default function QueueCards() {
                       <span className="text-xs text-white/50">{vendor.cuisine} cuisine</span>
                     </div>
 
-                    <div className={`px-2 py-1 rounded-lg border text-xs font-black flex items-center gap-1 ${getWaitColor(vendor.waitMinutes)}`}>
+                    <div className={`px-2 py-1 rounded-lg border text-xs font-black flex items-center gap-1 ${getSensoryStatusColor(vendor.waitMinutes, 12)}`}>
                       <Clock className="w-3 h-3" />
                       <span>{vendor.waitMinutes} min</span>
                     </div>
@@ -163,7 +174,7 @@ export default function QueueCards() {
                       <span className="text-xs text-white/50">Section {fac.zone}</span>
                     </div>
 
-                    <div className={`px-2 py-1 rounded-lg border text-xs font-black flex items-center gap-1 ${getWaitColor(fac.waitMinutes)}`}>
+                    <div className={`px-2 py-1 rounded-lg border text-xs font-black flex items-center gap-1 ${getSensoryStatusColor(fac.waitMinutes, 12)}`}>
                       <Clock className="w-3 h-3" />
                       <span>{fac.waitMinutes} min</span>
                     </div>

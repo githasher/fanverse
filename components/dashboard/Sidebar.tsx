@@ -14,16 +14,17 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { useState } from 'react';
-import type { ActiveView } from '@/types';
+import { useState, useMemo, memo } from 'react';
+import { t } from '@/lib/i18n';
 
-const navItems: { view: ActiveView; label: string; icon: React.ReactNode }[] = [
-  { view: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-  { view: 'chat', label: 'AI Chat', icon: <MessageSquare size={20} /> },
-  { view: 'map', label: 'Stadium Map', icon: <Map size={20} /> },
-  { view: 'timeline', label: 'Timeline', icon: <Clock size={20} /> },
-  { view: 'scanner', label: 'Scanner', icon: <ScanLine size={20} /> },
-  { view: 'settings', label: 'Settings', icon: <Settings size={20} /> },
+/** Static configurations mapping views to translation keys and icons */
+const navItemsDefinition = [
+  { view: 'dashboard' as const, labelKey: 'navDashboard' as const, Icon: LayoutDashboard },
+  { view: 'chat' as const, labelKey: 'navChat' as const, Icon: MessageSquare },
+  { view: 'map' as const, labelKey: 'navMap' as const, Icon: Map },
+  { view: 'timeline' as const, labelKey: 'navTimeline' as const, Icon: Clock },
+  { view: 'scanner' as const, labelKey: 'navScanner' as const, Icon: ScanLine },
+  { view: 'settings' as const, labelKey: 'navSettings' as const, Icon: Settings },
 ];
 
 const phaseLabels: Record<string, { label: string; color: string }> = {
@@ -34,7 +35,14 @@ const phaseLabels: Record<string, { label: string; color: string }> = {
   AFTER_MATCH: { label: 'Post-Match', color: 'bg-rose-500' },
 };
 
-export default function Sidebar() {
+/**
+ * Sidebar Navigation Component.
+ * Glassmorphic side navigation layout for dashboard routing.
+ * Displays notifications badge counts, match phases, and role switcher tools.
+ *
+ * @returns React.JSX.Element representing the Sidebar navigation panel.
+ */
+function Sidebar(): React.JSX.Element {
   const activeView = useFanverseStore((s) => s.activeView);
   const setActiveView = useFanverseStore((s) => s.setActiveView);
   const notifications = useFanverseStore((s) => s.notifications);
@@ -43,7 +51,10 @@ export default function Sidebar() {
   const updateUserProfile = useFanverseStore((s) => s.updateUserProfile);
   const [collapsed, setCollapsed] = useState(false);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = useMemo(() => {
+    return notifications.filter((n) => !n.read).length;
+  }, [notifications]);
+
   const phaseInfo = phaseLabels[currentPhase] ?? phaseLabels.ENTERING;
 
   return (
@@ -84,7 +95,7 @@ export default function Sidebar() {
 
       {/* Nav Items */}
       <nav className="flex-1 py-4 px-2 space-y-1">
-        {navItems.map((item) => {
+        {navItemsDefinition.map((item) => {
           const isActive = activeView === item.view;
           return (
             <motion.button
@@ -105,7 +116,9 @@ export default function Sidebar() {
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 />
               )}
-              <span className="flex-shrink-0">{item.icon}</span>
+              <span className="flex-shrink-0">
+                <item.Icon size={20} />
+              </span>
               <AnimatePresence>
                 {!collapsed && (
                   <motion.span
@@ -114,7 +127,7 @@ export default function Sidebar() {
                     exit={{ opacity: 0, width: 0 }}
                     className="text-sm font-medium overflow-hidden whitespace-nowrap"
                   >
-                    {item.label}
+                    {t(item.labelKey, userProfile.language)}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -224,3 +237,5 @@ export default function Sidebar() {
     </motion.aside>
   );
 }
+
+export default memo(Sidebar);

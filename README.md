@@ -90,6 +90,58 @@ FANVERSE AI maps every phase of a match-day into logical, context-aware decision
 
 ---
 
+## 🏗️ System Architecture
+
+The following diagram illustrates the relationship between the client state machine, simulated telemetry hooks, Next.js API routes, and Google Gemini AI services:
+
+```mermaid
+graph TD
+  subgraph Client Side
+    Dashboard[Dashboard Page] --> Store[Zustand Store]
+    Store --> Sidebar[Sidebar Navigation]
+    Store --> Overview[Stadium Overview Tab]
+    Store --> Map[Interactive map digital twin]
+    Store --> Chat[AI assistant chat interface]
+    Store --> Settings[Accessibility & pref panel]
+    Store --> Scanner[OCR Ticket Scanner]
+    SimHook[useSimulation Hook] -->|Ticks every 3s| Store
+  end
+  subgraph APIs & Services
+    Chat -->|POST /api/chat| ChatRoute[Chat Route]
+    Scanner -->|POST /api/scan| ScanRoute[Scan Route]
+    ChatRoute -->|getContextSummary| Gemini[Gemini 3.5 Flash Client]
+    ScanRoute -->|Image OCR| Gemini
+  end
+```
+
+---
+
+## 🌱 GreenGoal™ Sustainability Approach
+
+FANVERSE AI addresses sustainability through three telemetry models:
+1. **Dynamic CO₂ offsets**: Automatically calculates carbon offsets (saving 120g per fan) by advising NJ Transit rail transit options over ridesharing.
+2. **Waste Management**: Simulates waste volume recycled and registers dedicated recycling facilities coordinate maps inside MetLife Stadium (K and F zones).
+3. **Hydration Mapping**: Promotes reusable bottles by mapping hydration water stations.
+
+---
+
+## 🌐 Multilingual i18n Support
+
+The digital twin includes a custom i18n translation system supporting 5 languages:
+- **Languages**: English, Spanish, Arabic, French, Portuguese.
+- **Coverage**: Navigation menus, status titles, page header diagnostics, and accessibility settings.
+- **Gemini Alignment**: Locale preferences are passed to the system context, prompting the AI co-pilot to converse in the fan's preferred language.
+
+---
+
+## 📋 Assumptions Made
+
+- **Sensory Boundaries**: Weather metrics are clamped between MetLife extremes (50°F to 100°F).
+- **Seat Mapping**: Ticket seat coordinates map to the 8 gate serving sectors configured in the database.
+- **OCR Vision API**: Real-world ticket scanning utilizes base64 data streams parsed dynamically.
+
+---
+
 ## 🔑 Environment & API Credentials
 
 The project is pre-configured with the following credentials (stored locally in `.env.local` for development):

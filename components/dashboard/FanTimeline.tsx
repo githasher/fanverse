@@ -5,7 +5,13 @@ import { useFanverseStore } from '@/lib/store';
 import { CheckCircle2, Clock } from 'lucide-react';
 import { motion, type Variants } from 'framer-motion';
 
-export default function FanTimeline() {
+/**
+ * FanTimeline Dashboard Component.
+ * Renders a vertical, phase-aware fan journey timeline tracking key match-day milestones.
+ *
+ * @returns React.JSX.Element representing the fan milestone logs.
+ */
+function FanTimeline(): React.JSX.Element {
   const timeline = useFanverseStore((state) => state.timeline);
   const currentPhase = useFanverseStore((state) => state.currentPhase);
 
@@ -101,3 +107,5 @@ export default function FanTimeline() {
     </div>
   );
 }
+
+export default React.memo(FanTimeline);

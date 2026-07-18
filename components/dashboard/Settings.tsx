@@ -4,14 +4,28 @@ import React from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { Shield, Eye, Flame, Smile } from 'lucide-react';
 import type { DietaryTag } from '@/types';
+import { t } from '@/lib/i18n';
 
-export default function Settings() {
+/**
+ * Settings Dashboard Component.
+ * Allows the user to toggle accessibility settings (wheelchair accessibility routing, large text contrast, voice directions),
+ * manage World Cup dietary preferences, and configure language profiles.
+ *
+ * @returns React.JSX.Element representing the user settings panel.
+ */
+export default function Settings(): React.JSX.Element {
   const userProfile = useFanverseStore((state) => state.userProfile);
   const accessibilityMode = useFanverseStore((state) => state.accessibilityMode);
   const updateUserProfile = useFanverseStore((state) => state.updateUserProfile);
   const setAccessibility = useFanverseStore((state) => state.setAccessibility);
 
-  const handleAccessibilityToggle = (key: 'wheelchair' | 'visualImpairment' | 'hearingImpairment' | 'elderly') => {
+  /**
+   * Toggles individual user accessibility sensor features inside userProfile store.
+   *
+   * @param key The specific accessibility setting key.
+   * @returns void
+   */
+  const handleAccessibilityToggle = (key: 'wheelchair' | 'visualImpairment' | 'hearingImpairment' | 'elderly'): void => {
     updateUserProfile({
       accessibility: {
         ...userProfile.accessibility,
@@ -20,7 +34,13 @@ export default function Settings() {
     });
   };
 
-  const handleDisplayToggle = (key: 'highContrast' | 'largeText' | 'voiceNavigation') => {
+  /**
+   * Toggles general display overrides like high contrast or large font sizing inside accessibilityMode store.
+   *
+   * @param key The specific display override key.
+   * @returns void
+   */
+  const handleDisplayToggle = (key: 'highContrast' | 'largeText' | 'voiceNavigation'): void => {
     setAccessibility({
       [key]: !accessibilityMode[key],
     });
@@ -53,7 +73,7 @@ export default function Settings() {
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 md:p-6 space-y-6">
       <div>
-        <h3 className="text-lg font-bold font-outfit text-white">Preferences & Accessibility</h3>
+        <h3 className="text-lg font-bold font-outfit text-white">{t('settingsTitle', userProfile.language)}</h3>
         <p className="text-xs text-white/50">Personalize your FANVERSE AI stadium assistant experience</p>
       </div>
 
