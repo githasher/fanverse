@@ -6,12 +6,6 @@
 import type {
   StadiumState,
   MatchDayPhase,
-  Gate,
-  Zone,
-  Facility,
-  FoodVendor,
-  Weather,
-  Transport,
   GateStatus,
 } from '@/types';
 import { createInitialStadiumState } from './stadiumData';

@@ -3,8 +3,8 @@
 // Handles chat, ticket OCR, and contextual responses via Gemini 2.5 Flash
 // =============================================================================
 
-import { GoogleGenAI, type Chat, type Content } from '@google/genai';
-import type { StadiumState, UserProfile, TicketInfo } from '@/types';
+import { GoogleGenAI, type Chat } from '@google/genai';
+import type { StadiumState, UserProfile, TicketInfo, ChatMessage } from '@/types';
 
 // -----------------------------------------------------------------------------
 // Initialise the Gemini client
@@ -38,6 +38,11 @@ You are a proactive, friendly, and deeply knowledgeable stadium concierge. You h
 - Live weather conditions (temperature, wind, precipitation, UV index)
 - Transport options (NJ Transit metro, bus, rideshare, parking availability)
 - The current match-day phase (Before Match, Entering, Inside, Halftime, After Match)
+
+## Dual Operational Modes
+Depending on the user's active role, your personality and assistance focus shifts:
+1. **Fan Mode**: Focus on personal logistics, finding seats, dietary-matched food vendors, short restrooms wait times, accessibility routing, and transportation.
+2. **Staff/Organizer Mode**: Assist venue organizers and volunteer hosts. Answer operational questions (e.g. volunteer dispatches, crowd control, emergency safety procedures, dispatching clean-up/maintenance crews, or rerouting arriving spectators to quieter gates).
 
 ## Your Personality
 - **Proactive**: Don't just answer questions — anticipate needs. If someone asks about their seat, also mention the nearest restroom and food options.
@@ -185,12 +190,12 @@ export async function getSmartResponse(
   userMessage: string,
   stadiumState: StadiumState,
   userProfile: UserProfile,
-  history: any[] = []
+  history: ChatMessage[] = []
 ): Promise<string> {
   const client = getClient();
 
   // Build a compact context summary to keep token usage reasonable
-  const contextSummary = buildContextSummary(stadiumState, userProfile);
+  const contextSummary = buildContextSummary(stadiumState);
 
   const systemInstruction = `${SYSTEM_PROMPT}
 
@@ -210,9 +215,9 @@ ${contextSummary}
 Respond helpfully and concisely in the user's preferred language. Use the live data above to give specific, actionable advice.`;
 
   // Format history messages to match content objects format if they don't already
-  const formattedHistory = history.map((msg: any) => ({
+  const formattedHistory = history.map((msg: ChatMessage) => ({
     role: msg.role === 'user' ? 'user' : 'model',
-    parts: typeof msg.parts === 'string' ? [{ text: msg.parts }] : msg.parts,
+    parts: [{ text: msg.content }],
   }));
 
   const response = await client.models.generateContent({
@@ -240,7 +245,7 @@ Respond helpfully and concisely in the user's preferred language. Use the live d
 // Context builder — distils StadiumState into a concise text block
 // -----------------------------------------------------------------------------
 
-function buildContextSummary(state: StadiumState, profile: UserProfile): string {
+function buildContextSummary(state: StadiumState): string {
   const { gates, zones, facilities, foodVendors, weather, transport, phase } = state;
 
   // Gates summary

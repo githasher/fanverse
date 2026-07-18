@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coffee, User, Flame, Clock, Heart, Award } from 'lucide-react';
-import type { Facility, FoodVendor } from '@/types';
+import { Coffee, User, Clock, Award } from 'lucide-react';
+import type { FoodVendor } from '@/types';
 
 export default function QueueCards() {
   const stadiumState = useFanverseStore((state) => state.stadiumState);
@@ -41,11 +41,7 @@ export default function QueueCards() {
     return 'text-rose-400 border-rose-500/20 bg-rose-500/5';
   };
 
-  const getWaitBadge = (minutes: number) => {
-    if (minutes <= 5) return 'bg-emerald-500 text-[#0A0E27]';
-    if (minutes <= 12) return 'bg-amber-500 text-[#0A0E27]';
-    return 'bg-rose-500 text-white';
-  };
+
 
   return (
     <div className="space-y-4">
@@ -85,7 +81,7 @@ export default function QueueCards() {
             exit={{ opacity: 0 }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
-            {displayFood.slice(0, 4).map((vendor, idx) => {
+            {displayFood.slice(0, 4).map((vendor) => {
               const isRecommended = vendor.id === lowestFood?.id;
               return (
                 <div
@@ -143,7 +139,7 @@ export default function QueueCards() {
             exit={{ opacity: 0 }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
-            {restrooms.slice(0, 4).map((fac, idx) => {
+            {restrooms.slice(0, 4).map((fac) => {
               const isRecommended = fac.id === lowestRestroom?.id;
               return (
                 <div

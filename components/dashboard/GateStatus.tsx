@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { useFanverseStore } from '@/lib/store';
-import { motion } from 'framer-motion';
-import { DoorClosed, Shield, Clock, HelpCircle } from 'lucide-react';
+import { DoorClosed, Clock } from 'lucide-react';
 
 export default function GateStatus() {
   const stadiumState = useFanverseStore((state) => state.stadiumState);

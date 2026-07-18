@@ -80,9 +80,10 @@ export default function TicketScanner() {
         timestamp: Date.now(),
         type: 'ticket',
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
       console.error('Scan processing error:', err);
-      setError(`Failed to extract ticket info: ${err.message || 'Vision limits exceeded'}. Using mock fallback.`);
+      setError(`Failed to extract ticket info: ${errorMsg || 'Vision limits exceeded'}. Using mock fallback.`);
       
       // Fallback ticket
       const fallbackTicket: TicketInfo = {
@@ -265,7 +266,14 @@ export default function TicketScanner() {
             </div>
           ) : (
             <div className="flex-1 flex flex-col justify-center items-center text-center gap-2">
-              <FileText className="w-10 h-10 text-white/20" />
+              {preview ? (
+                <div className="relative w-20 h-28 border border-white/10 rounded-lg overflow-hidden bg-black/25 flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={preview} alt="Ticket preview" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <FileText className="w-10 h-10 text-white/20" />
+              )}
               <span className="text-xs font-bold text-white/60">No ticket uploaded yet</span>
               <p className="text-[10px] text-white/40 max-w-[200px]">
                 Upload your ticket to display details and get seats routing.

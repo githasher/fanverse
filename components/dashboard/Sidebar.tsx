@@ -39,6 +39,8 @@ export default function Sidebar() {
   const setActiveView = useFanverseStore((s) => s.setActiveView);
   const notifications = useFanverseStore((s) => s.notifications);
   const currentPhase = useFanverseStore((s) => s.currentPhase);
+  const userProfile = useFanverseStore((s) => s.userProfile);
+  const updateUserProfile = useFanverseStore((s) => s.updateUserProfile);
   const [collapsed, setCollapsed] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -188,6 +190,28 @@ export default function Sidebar() {
             )}
           </AnimatePresence>
         </motion.button>
+      </div>
+
+      {/* Role Switcher */}
+      <div className="px-3 pb-2 pt-1 border-t border-white/5">
+        <button
+          onClick={() => {
+            const nextRole = userProfile.role === 'fan' ? 'staff' : 'fan';
+            updateUserProfile({ role: nextRole });
+            setActiveView('dashboard');
+          }}
+          className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
+            userProfile.role === 'staff'
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20'
+              : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20'
+          }`}
+        >
+          {collapsed ? (
+            userProfile.role === 'staff' ? '🛠️' : '⚽'
+          ) : (
+            userProfile.role === 'staff' ? '⚽ Switch to Fan' : '🛡️ Switch to Staff'
+          )}
+        </button>
       </div>
 
       {/* Collapse Toggle */}

@@ -11,6 +11,7 @@ import FanTimeline from '@/components/dashboard/FanTimeline';
 import TicketScanner from '@/components/dashboard/TicketScanner';
 import Settings from '@/components/dashboard/Settings';
 import ProactiveAlert from '@/components/dashboard/ProactiveAlert';
+import StaffCommand from '@/components/dashboard/StaffCommand';
 
 export default function DashboardPage() {
   // Drive the live stadium simulation
@@ -18,8 +19,6 @@ export default function DashboardPage() {
   
   const activeView = useFanverseStore((state) => state.activeView);
   const userProfile = useFanverseStore((state) => state.userProfile);
-  const notifications = useFanverseStore((state) => state.notifications);
-  const clearNotifications = useFanverseStore((state) => state.clearNotifications);
 
   // Set user location if browser geolocation is available
   useEffect(() => {
@@ -47,7 +46,7 @@ export default function DashboardPage() {
   const renderActiveView = () => {
     switch (activeView) {
       case 'dashboard':
-        return <StadiumOverview />;
+        return userProfile.role === 'staff' ? <StaffCommand /> : <StadiumOverview />;
       case 'map':
         return <StadiumMap />;
       case 'chat':
@@ -59,7 +58,7 @@ export default function DashboardPage() {
       case 'settings':
         return <Settings />;
       default:
-        return <StadiumOverview />;
+        return userProfile.role === 'staff' ? <StaffCommand /> : <StadiumOverview />;
     }
   };
 
@@ -73,8 +72,8 @@ export default function DashboardPage() {
         {/* Header bar */}
         <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold font-outfit tracking-tight capitalize text-white">
-              {activeView === 'dashboard' ? 'Stadium digital twin' : activeView}
+            <h1 className="text-xl md:text-2xl font-bold font-outfit tracking-tight capitalize text-white font-outfit">
+              {activeView === 'dashboard' ? (userProfile.role === 'staff' ? 'Operations Control Center' : 'Stadium digital twin') : activeView}
             </h1>
             <p className="text-xs md:text-sm text-white/50">
               {isRunning ? '🟢 Connected to Live Stadium Data' : '🔴 Simulation Paused'}

@@ -47,7 +47,7 @@ const NOTIFICATION_COOLDOWN_TICKS = 10;
 // -----------------------------------------------------------------------------
 
 export function useSimulation() {
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastNotifiedRef = useRef<Map<string, number>>(new Map());
 
@@ -258,7 +258,6 @@ export function useSimulation() {
 
   useEffect(() => {
     // Start the simulation loop
-    setIsRunning(true);
 
     intervalRef.current = setInterval(() => {
       const newState = simulation.tick();

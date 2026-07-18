@@ -7,6 +7,7 @@ import {
   useMotionValue,
   useTransform,
   animate,
+  type Variants
 } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -24,33 +25,30 @@ import {
   Timer,
   ArrowRight,
   Star,
-  Shield,
   Brain,
   MapPin,
   Eye,
   Activity,
-  Cpu,
-  Network,
 } from 'lucide-react';
 
-const fadeInUp: any = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
 };
 
-const fadeIn: any = {
+const fadeIn: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { duration: 0.8 } },
 };
 
-const staggerContainer: any = {
+const staggerContainer: Variants = {
   hidden: {},
   visible: {
     transition: { staggerChildren: 0.1, delayChildren: 0.1 },
   },
 };
 
-const scaleIn: any = {
+const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.8 },
   visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: 'easeOut' } },
 };

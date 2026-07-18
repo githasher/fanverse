@@ -138,6 +138,7 @@ export interface TicketInfo {
 /** Complete user profile */
 export interface UserProfile {
   name: string;
+  role: 'fan' | 'staff';
   language: string;
   accessibility: AccessibilityPreferences;
   preferences: UserPreferences;

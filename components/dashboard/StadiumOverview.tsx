@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useFanverseStore } from '@/lib/store';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { Users, Clock, DoorOpen, CloudSun, TrendingDown, ArrowUpRight } from 'lucide-react';
 import QueueCards from './QueueCards';
 import GateStatus from './GateStatus';
@@ -30,7 +30,7 @@ export default function StadiumOverview() {
     stadiumState.zones.length;
   const simulatedVisitors = Math.round(82500 * averageCrowdDensity);
 
-  const containerVariants: any = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -40,7 +40,7 @@ export default function StadiumOverview() {
     },
   };
 
-  const itemVariants: any = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 15 },
     show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } },
   };

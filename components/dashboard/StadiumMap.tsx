@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coffee, User, Info, AlertCircle, Compass, HelpCircle } from 'lucide-react';
+import { Info, Compass } from 'lucide-react';
 import type { Zone, Facility, FoodVendor } from '@/types';
 
 export default function StadiumMap() {

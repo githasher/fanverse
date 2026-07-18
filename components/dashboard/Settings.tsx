@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useFanverseStore } from '@/lib/store';
-import { Shield, Eye, Flame, Smile, Settings as SettingsIcon } from 'lucide-react';
+import { Shield, Eye, Flame, Smile } from 'lucide-react';
 import type { DietaryTag } from '@/types';
 
 export default function Settings() {
@@ -167,7 +167,7 @@ export default function Settings() {
                 return (
                   <div
                     key={item.key}
-                    onClick={() => handleAccessibilityToggle(item.key as any)}
+                    onClick={() => handleAccessibilityToggle(item.key as 'wheelchair' | 'visualImpairment' | 'hearingImpairment' | 'elderly')}
                     className={`p-3 rounded-lg border flex justify-between items-center cursor-pointer transition-all ${
                       isSelected ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-white/5 bg-white/5 hover:bg-white/10'
                     }`}
@@ -201,7 +201,7 @@ export default function Settings() {
                 return (
                   <div
                     key={item.key}
-                    onClick={() => handleDisplayToggle(item.key as any)}
+                    onClick={() => handleDisplayToggle(item.key as 'highContrast' | 'largeText' | 'voiceNavigation')}
                     className={`p-3 rounded-lg border flex justify-between items-center cursor-pointer transition-all ${
                       isSelected ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-white/5 bg-white/5 hover:bg-white/10'
                     }`}

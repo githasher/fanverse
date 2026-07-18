@@ -15,10 +15,11 @@ export async function POST(req: Request) {
     const responseText = await getSmartResponse(message, stadiumState, userProfile, history || []);
 
     return NextResponse.json({ response: responseText });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
     console.error('Chat API route error:', error);
     return NextResponse.json(
-      { error: error?.message || 'Internal Server Error' },
+      { error: errorMsg || 'Internal Server Error' },
       { status: 500 }
     );
   }

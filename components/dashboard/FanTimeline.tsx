@@ -2,14 +2,14 @@
 
 import React from 'react';
 import { useFanverseStore } from '@/lib/store';
-import { CheckCircle2, Circle, Clock } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { CheckCircle2, Clock } from 'lucide-react';
+import { motion, type Variants } from 'framer-motion';
 
 export default function FanTimeline() {
   const timeline = useFanverseStore((state) => state.timeline);
   const currentPhase = useFanverseStore((state) => state.currentPhase);
 
-  const containerVariants: any = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -19,7 +19,7 @@ export default function FanTimeline() {
     },
   };
 
-  const itemVariants: any = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, x: -10 },
     show: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 100 } },
   };

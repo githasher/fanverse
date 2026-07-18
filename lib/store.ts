@@ -76,6 +76,7 @@ export interface FanverseStore {
 
 const DEFAULT_USER_PROFILE: UserProfile = {
   name: '',
+  role: 'fan',
   language: 'en',
   accessibility: {
     wheelchair: false,
@@ -181,7 +182,7 @@ const WELCOME_MESSAGE: ChatMessage = {
 // Store creation
 // -----------------------------------------------------------------------------
 
-export const useFanverseStore = create<FanverseStore>((set, get) => ({
+export const useFanverseStore = create<FanverseStore>((set) => ({
   // ----- Initial state -----
   stadiumState: createInitialStadiumState(),
   userProfile: DEFAULT_USER_PROFILE,

@@ -4,7 +4,7 @@ import React from 'react';
 import { useFanverseStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bell, Shield, CloudRain, Clock, AlertOctagon } from 'lucide-react';
-import type { Notification, NotificationType } from '@/types';
+import type { NotificationType } from '@/types';
 
 export default function ProactiveAlert() {
   const notifications = useFanverseStore((state) => state.notifications);

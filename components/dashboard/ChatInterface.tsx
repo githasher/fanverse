@@ -1,10 +1,21 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useFanverseStore } from '@/lib/store';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, MicOff, AlertCircle, Compass, HelpCircle } from 'lucide-react';
-import type { ChatMessage, ChatRole } from '@/types';
+import { Send, Mic, MicOff, AlertCircle } from 'lucide-react';
+import type { ChatMessage } from '@/types';
+
+interface WebSpeechRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  onstart: () => void;
+  onresult: (event: { results: { [key: number]: { [key: number]: { transcript: string } } } }) => void;
+  onerror: (event: { error: string }) => void;
+  onend: () => void;
+}
 
 export default function ChatInterface() {
   const [inputValue, setInputValue] = useState('');
@@ -18,7 +29,7 @@ export default function ChatInterface() {
   const userProfile = useFanverseStore((state) => state.userProfile);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<WebSpeechRecognition | null>(null);
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -33,7 +44,8 @@ export default function ChatInterface() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        (window as unknown as { SpeechRecognition?: new () => WebSpeechRecognition; webkitSpeechRecognition?: new () => WebSpeechRecognition }).SpeechRecognition ||
+        (window as unknown as { SpeechRecognition?: new () => WebSpeechRecognition; webkitSpeechRecognition?: new () => WebSpeechRecognition }).webkitSpeechRecognition;
       if (SpeechRecognition) {
         const rec = new SpeechRecognition();
         rec.continuous = false;
@@ -45,12 +57,12 @@ export default function ChatInterface() {
           setSpeechError(null);
         };
 
-        rec.onresult = (event: any) => {
+        rec.onresult = (event: { results: { [key: number]: { [key: number]: { transcript: string } } } }) => {
           const transcript = event.results[0][0].transcript;
           setInputValue(transcript);
         };
 
-        rec.onerror = (event: any) => {
+        rec.onerror = (event: { error: string }) => {
           console.error('Speech recognition error:', event.error);
           setSpeechError(`Voice error: ${event.error}`);
           setIsListening(false);
@@ -87,73 +99,77 @@ export default function ChatInterface() {
     { label: 'I lost my child / Emergency assistance', query: 'EMERGENCY: I need medical support or safety assistance.' },
   ];
 
-  const handleSendMessage = async (text: string) => {
-    if (!text.trim()) return;
+  const handleSendMessage = useCallback(
+    async (text: string) => {
+      if (!text.trim()) return;
 
-    // Create user message
-    const userMsg: ChatMessage = {
-      id: `chat-${Date.now()}`,
-      role: 'user',
-      content: text,
-      timestamp: Date.now(),
-      type: 'text',
-    };
+      // Create user message
+      const userMsg: ChatMessage = {
+        id: `chat-${Date.now()}`,
+        role: 'user',
+        content: text,
+        timestamp: Date.now(),
+        type: 'text',
+      };
 
-    addMessage(userMsg);
-    setInputValue('');
-    setIsTyping(true);
+      addMessage(userMsg);
+      setInputValue('');
+      setIsTyping(true);
 
-    try {
-      // Map Zustand chat history to Gemini API format
-      const history = chatMessages
-        .slice(-6) // Send last 6 messages to keep context window small
-        .map((msg) => ({
-          role: msg.role === 'user' ? ('user' as const) : ('model' as const),
-          parts: [{ text: msg.content }],
-        }));
+      try {
+        // Map Zustand chat history to Gemini API format
+        const history = chatMessages
+          .slice(-6) // Send last 6 messages to keep context window small
+          .map((msg) => ({
+            role: msg.role === 'user' ? ('user' as const) : ('model' as const),
+            parts: [{ text: msg.content }],
+          }));
 
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: text,
-          stadiumState,
-          userProfile,
-          history,
-        }),
-      });
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: text,
+            stadiumState,
+            userProfile,
+            history,
+          }),
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (data.error) {
-        throw new Error(data.error);
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        const assistantMsg: ChatMessage = {
+          id: `chat-${Date.now() + 1}`,
+          role: 'assistant',
+          content: data.response,
+          timestamp: Date.now(),
+          type: 'text',
+        };
+
+        addMessage(assistantMsg);
+      } catch (err: unknown) {
+        const errorMsgString = err instanceof Error ? err.message : String(err);
+        console.error('Chat interface fetch error:', err);
+        const errorMsg: ChatMessage = {
+          id: `chat-${Date.now() + 1}`,
+          role: 'assistant',
+          content: `⚠️ Failed to fetch response: ${errorMsgString || 'Gemini quota limits reached.'}. Please retry or check network settings.`,
+          timestamp: Date.now(),
+          type: 'text',
+        };
+        addMessage(errorMsg);
+      } finally {
+        setIsTyping(false);
       }
-
-      const assistantMsg: ChatMessage = {
-        id: `chat-${Date.now() + 1}`,
-        role: 'assistant',
-        content: data.response,
-        timestamp: Date.now(),
-        type: 'text',
-      };
-      
-      addMessage(assistantMsg);
-    } catch (err: any) {
-      console.error('Chat interface fetch error:', err);
-      const errorMsg: ChatMessage = {
-        id: `chat-${Date.now() + 1}`,
-        role: 'assistant',
-        content: `⚠️ Failed to fetch response: ${err.message || 'Gemini quota limits reached.'}. Please retry or check network settings.`,
-        timestamp: Date.now(),
-        type: 'text',
-      };
-      addMessage(errorMsg);
-    } finally {
-      setIsTyping(false);
-    }
-  };
+    },
+    [chatMessages, stadiumState, userProfile, addMessage]
+  );
 
   return (
     <div className="flex flex-col h-[calc(100vh-200px)] bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden relative">

@@ -15,10 +15,11 @@ export async function POST(req: Request) {
     const ticketInfo = await analyzeTicket(imageBase64);
 
     return NextResponse.json({ ticket: ticketInfo });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
     console.error('Scan API route error:', error);
     return NextResponse.json(
-      { error: error?.message || 'Internal Server Error' },
+      { error: errorMsg || 'Internal Server Error' },
       { status: 500 }
     );
   }
