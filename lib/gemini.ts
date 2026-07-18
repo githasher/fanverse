@@ -3,7 +3,7 @@
 // Handles chat, ticket OCR, and contextual responses via Gemini 2.5 Flash
 // =============================================================================
 
-import { GoogleGenAI, type Chat } from '@google/genai';
+import { GoogleGenAI, type Chat, type Content } from '@google/genai';
 import type { StadiumState, UserProfile, TicketInfo, ChatMessage } from '@/types';
 import { env } from './env';
 import { logger } from './logger';
@@ -13,10 +13,6 @@ import {
   AI_TOP_P,
   AI_TOP_K,
   AI_MAX_OUTPUT_TOKENS,
-  SHORT_QUEUE_THRESHOLD_MINUTES,
-  CONTEXT_SUMMARY_TOP_ZONES,
-  CONTEXT_SUMMARY_TOP_FACILITIES,
-  CONTEXT_SUMMARY_TOP_FOOD,
   STADIUM_CAPACITY,
 } from './constants';
 
@@ -196,12 +192,34 @@ Respond ONLY with the JSON object, no markdown fences, no explanation.`;
 }
 
 // -----------------------------------------------------------------------------
-// Smart contextual response
+// Smart contextual response (using Function Calling / Tools)
 // -----------------------------------------------------------------------------
 
+const stadiumTools = [
+  {
+    functionDeclarations: [
+      {
+        name: 'getStadiumTelemetry',
+        description: 'Get live wait times, queues, gates, food vendors, weather, and transport data for the stadium.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            dataType: {
+              type: 'STRING',
+              description: 'Type of data to fetch',
+              enum: ['gates', 'food', 'facilities', 'transport', 'weather', 'zones'],
+            },
+          },
+          required: ['dataType'],
+        },
+      },
+    ],
+  },
+];
+
 /**
- * Sends a user message along with full stadium context to Gemini and returns
- * an intelligent, contextual response.
+ * Sends a user message to Gemini using Tools (Function Calling) to fetch
+ * contextual stadium telemetry only when needed, saving tokens and reducing hallucinations.
  *
  * @param userMessage Message content from user.
  * @param stadiumState Current sensory telemetry of stadium.
@@ -216,16 +234,14 @@ export async function getSmartResponse(
   history: ChatMessage[] = []
 ): Promise<string> {
   const client = getClient();
-  const contextSummary = buildContextSummary(stadiumState);
 
   const systemInstruction = `${SYSTEM_PROMPT}
 
-## Current Stadium Context
-${contextSummary}
-
 ## User Profile
 - Name: ${userProfile.name || 'Fan'}
+- Role: ${userProfile.role || 'fan'} (Dual Operational Modes: if 'staff', you are a Stadium Operations Coordinator for crowd control and volunteer dispatching)
 - Language: ${userProfile.language || 'English'}
+- Sustainability Points: ${userProfile.sustainabilityPoints} (arriving via Metro saves carbon and adds points)
 - Accessibility: wheelchair=${userProfile.accessibility.wheelchair}, visual=${userProfile.accessibility.visualImpairment}, hearing=${userProfile.accessibility.hearingImpairment}, elderly=${userProfile.accessibility.elderly}
 - Dietary restrictions: ${userProfile.preferences.dietaryRestrictions.length > 0 ? userProfile.preferences.dietaryRestrictions.join(', ') : 'None'}
 - Traveling with: ${userProfile.preferences.travelingWith}
@@ -233,7 +249,7 @@ ${contextSummary}
 - Ticket: ${userProfile.ticket ? `Section ${userProfile.ticket.section}, Row ${userProfile.ticket.row}, Seat ${userProfile.ticket.seat} (${userProfile.ticket.matchName})` : 'Not scanned yet'}
 - Current phase: ${userProfile.matchDayPhase}
 
-Respond helpfully and concisely in the user's preferred language. Use the live data above to give specific, actionable advice.`;
+Respond helpfully and concisely in the user's preferred language. Use the 'getStadiumTelemetry' tool to fetch live wait times, queues, or gate data only when necessary to answer the user's question. If the user is 'staff', coordinate dispatches or redirect crowd flows professionally.`;
 
   const formattedHistory = history.map((msg: ChatMessage) => {
     const role = msg.role === 'user' ? 'user' : 'model';
@@ -250,123 +266,69 @@ Respond helpfully and concisely in the user's preferred language. Use the live d
     };
   });
 
-  const response = await client.models.generateContent({
-    model: MODEL_ID,
-    contents: [
-      ...formattedHistory,
-      {
-        role: 'user',
-        parts: [{ text: userMessage }],
-      },
-    ],
-    config: {
-      systemInstruction,
-      temperature: AI_TEMPERATURE,
-      topP: AI_TOP_P,
-      topK: AI_TOP_K,
-      maxOutputTokens: AI_MAX_OUTPUT_TOKENS,
+  const contents: Content[] = [
+    ...formattedHistory,
+    {
+      role: 'user',
+      parts: [{ text: userMessage }],
     },
+  ];
+
+  const config = {
+    systemInstruction,
+    tools: stadiumTools,
+    temperature: AI_TEMPERATURE,
+    topP: AI_TOP_P,
+    topK: AI_TOP_K,
+    maxOutputTokens: AI_MAX_OUTPUT_TOKENS,
+  };
+
+  let response = await client.models.generateContent({
+    model: MODEL_ID,
+    contents,
+    config,
   });
 
-  return response.text?.trim() ?? 'I apologise — I wasn\'t able to generate a response. Please try again.';
-}
+  // Handle consecutive function calls in a loop (up to a limit of 5 to avoid infinite loops)
+  let loopCount = 0;
+  while (response.functionCalls && response.functionCalls.length > 0 && loopCount < 5) {
+    loopCount++;
+    const call = response.functionCalls[0];
+    const args = call.args as { dataType: string };
+    let resultData: unknown = {};
 
-// -----------------------------------------------------------------------------
-// Context Builders (Helper functions split to maintain <30 lines rule)
-// -----------------------------------------------------------------------------
+    switch (args.dataType) {
+      case 'gates': resultData = stadiumState.gates; break;
+      case 'food': resultData = stadiumState.foodVendors; break;
+      case 'facilities': resultData = stadiumState.facilities; break;
+      case 'transport': resultData = stadiumState.transport; break;
+      case 'weather': resultData = stadiumState.weather; break;
+      case 'zones': resultData = stadiumState.zones; break;
+      default: resultData = { error: 'Unknown data type' };
+    }
 
-/** Builds the gate details log */
-function buildGatesSummary(gates: StadiumState['gates']): string {
-  return gates
-    .map(
-      (g) =>
-        `${g.name}: ${g.status.toUpperCase()}, crowd ${Math.round(g.crowdLevel * 100)}%, wait ${g.waitMinutes} min${g.accessibleEntry ? ' ♿' : ''}`
-    )
-    .join('\n');
-}
+    if (response.candidates?.[0]?.content) {
+      contents.push(response.candidates[0].content);
+    }
 
-/** Builds the busiest zones log */
-function buildZonesSummary(zones: StadiumState['zones']): string {
-  const sortedZones = [...zones].sort((a, b) => b.crowdDensity - a.crowdDensity);
-  return sortedZones
-    .slice(0, CONTEXT_SUMMARY_TOP_ZONES)
-    .map((z) => `${z.name}: ${Math.round(z.crowdDensity * 100)}% density, ${z.temperature}°F`)
-    .join('\n');
-}
+    contents.push({
+      role: 'tool',
+      parts: [
+        {
+          functionResponse: {
+            name: call.name,
+            response: { result: JSON.stringify(resultData) },
+          },
+        },
+      ],
+    });
 
-/** Builds the busiest facilities log */
-function buildFacilitiesSummary(facilities: StadiumState['facilities']): string {
-  const busyFacilities = facilities
-    .filter((f) => f.waitMinutes > SHORT_QUEUE_THRESHOLD_MINUTES)
-    .sort((a, b) => b.waitMinutes - a.waitMinutes);
+    response = await client.models.generateContent({
+      model: MODEL_ID,
+      contents,
+      config,
+    });
+  }
 
-  return busyFacilities
-    .slice(0, CONTEXT_SUMMARY_TOP_FACILITIES)
-    .map((f) => `${f.name} (${f.type}): ${f.queueLength} people, ~${f.waitMinutes} min wait`)
-    .join('\n');
-}
-
-/** Builds the recommended food vendors log */
-function buildFoodSummary(foodVendors: StadiumState['foodVendors']): string {
-  const sortedFood = [...foodVendors].sort((a, b) => a.waitMinutes - b.waitMinutes);
-  return sortedFood
-    .slice(0, CONTEXT_SUMMARY_TOP_FOOD)
-    .map(
-      (v) =>
-        `${v.name} (${v.cuisine}): ${v.waitMinutes} min wait, $${v.priceRange.min}-$${v.priceRange.max}${v.dietaryTags.length ? ` [${v.dietaryTags.join(', ')}]` : ''}`
-    )
-    .join('\n');
-}
-
-/** Builds the weather description log */
-function buildWeatherSummary(weather: StadiumState['weather']): string {
-  const condText = weather.condition.replace(/_/g, ' ');
-  return `${weather.temperature}°F (feels ${weather.feelsLike}°F), ${condText}, humidity ${weather.humidity}%, wind ${weather.windSpeed} mph ${weather.windDirection}, UV ${weather.uvIndex}, rain chance ${weather.precipitation}%`;
-}
-
-/** Builds the transport status log */
-function buildTransportSummary(transport: StadiumState['transport']): string {
-  return [
-    `Metro: ${transport.metro.status}, ~${transport.metro.estimatedWait} min wait`,
-    `Bus: ${transport.bus.status}, ~${transport.bus.estimatedWait} min wait`,
-    `Rideshare: ${transport.rideshare.status}, ~${transport.rideshare.estimatedWait} min, surge ${transport.rideshare.surgeMultiplier}x`,
-    `Parking: ${transport.parking.availableSpots.toLocaleString()}/${transport.parking.totalSpots.toLocaleString()} spots, shuttle ${transport.parking.shuttleWait} min`,
-  ].join('\n');
-}
-
-/**
- * Condenses the complete, real-time StadiumState sensor telemetry
- * into a concise text block for injection into the Gemini system context.
- *
- * @param state The live StadiumState values.
- * @returns string formatted summary log.
- */
-function buildContextSummary(state: StadiumState): string {
-  const gatesSummary = buildGatesSummary(state.gates);
-  const zonesSummary = buildZonesSummary(state.zones);
-  const busyFacilities = buildFacilitiesSummary(state.facilities);
-  const foodSummary = buildFoodSummary(state.foodVendors);
-  const weatherStr = buildWeatherSummary(state.weather);
-  const transportStr = buildTransportSummary(state.transport);
-
-  return `**Match Phase**: ${state.phase}
-**Time**: ${state.timestamp}
-
-### Gates
-${gatesSummary}
-
-### Busiest Zones
-${zonesSummary}
-
-### Facility Queues
-${busyFacilities || 'All facilities have short queues (< 3 min)'}
-
-### Food Vendors (Shortest Queues)
-${foodSummary}
-
-### Weather
-${weatherStr}
-
-### Transport
-${transportStr}`;
+  return response.text?.trim() ?? "I apologise — I wasn't able to generate a response. Please try again.";
 }

@@ -13,6 +13,7 @@ import {
   Siren,
   ArrowRight,
 } from 'lucide-react';
+import FocusLock from 'react-focus-lock';
 
 /** Emergency category definition */
 interface EmergencyType {
@@ -100,13 +101,14 @@ function EmergencyPanelComponent({ onClose }: { onClose: () => void }): React.JS
   }, [nearestMedicalStation, nearestSecurity]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-      role="alertdialog"
-      aria-modal="true"
-      aria-label="Emergency Response Panel"
-    >
-      <div className="bg-[#0A0E27] border border-red-500/30 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-[0_0_60px_rgba(239,68,68,0.2)]">
+    <FocusLock>
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+        role="alertdialog"
+        aria-modal="true"
+        aria-label="Emergency Response Panel"
+      >
+        <div className="bg-[#0A0E27] border border-red-500/30 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-[0_0_60px_rgba(239,68,68,0.2)]">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-red-500/20">
           <div className="flex items-center gap-3">
@@ -193,7 +195,7 @@ function EmergencyPanelComponent({ onClose }: { onClose: () => void }): React.JS
                   <span>Coordinating emergency response...</span>
                 </div>
               ) : (
-                <p className="text-sm text-white/80 leading-relaxed">
+                <p className="text-sm text-white/80 leading-relaxed" aria-live="polite">
                   {getEmergencyResponse(selectedType)}
                 </p>
               )}
@@ -201,7 +203,8 @@ function EmergencyPanelComponent({ onClose }: { onClose: () => void }): React.JS
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </FocusLock>
   );
 }
 

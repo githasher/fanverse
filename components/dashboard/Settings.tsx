@@ -72,7 +72,7 @@ export default function Settings(): React.JSX.Element {
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 md:p-6 space-y-6">
       <div>
         <h3 className="text-lg font-bold font-outfit text-white">{t('settingsTitle', userProfile.language)}</h3>
-        <p className="text-xs text-white/50">Personalize your FANVERSE AI stadium assistant experience</p>
+        <p className="text-xs text-white/70">Personalize your FANVERSE AI stadium assistant experience</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -86,7 +86,7 @@ export default function Settings(): React.JSX.Element {
             
             <div className="space-y-3">
               <div className="space-y-1">
-                <label htmlFor="fan-name" className="text-[10px] text-white/40 uppercase block font-semibold">Fan Name</label>
+                <label htmlFor="fan-name" className="text-[10px] text-white/70 uppercase block font-semibold">Name</label>
                 <input
                   id="fan-name"
                   type="text"
@@ -98,7 +98,7 @@ export default function Settings(): React.JSX.Element {
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="favorite-team" className="text-[10px] text-white/40 uppercase block font-semibold">Supporting Team</label>
+                <label htmlFor="favorite-team" className="text-[10px] text-white/70 uppercase block font-semibold">Supporting Team</label>
                 <input
                   id="favorite-team"
                   type="text"
@@ -111,6 +111,52 @@ export default function Settings(): React.JSX.Element {
                   placeholder="e.g. Argentina, USA..."
                   className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-cyan-400 text-xs"
                 />
+              </div>
+
+              {/* Active Role Selector (Problem Alignment: Operations Support) */}
+              <div className="space-y-1 pt-1">
+                <span className="text-[10px] text-white/70 uppercase block font-semibold">Active Mode</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => updateUserProfile({ role: 'fan' })}
+                    className={`px-3 py-1.5 rounded-lg border text-center text-xs font-semibold transition-all ${
+                      userProfile.role === 'fan'
+                        ? 'bg-cyan-500 border-cyan-400 text-[#0A0E27]'
+                        : 'bg-white/5 border-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Fan Mode
+                  </button>
+                  <button
+                    onClick={() => updateUserProfile({ role: 'staff' })}
+                    className={`px-3 py-1.5 rounded-lg border text-center text-xs font-semibold transition-all ${
+                      userProfile.role === 'staff'
+                        ? 'bg-amber-500 border-amber-400 text-[#0A0E27]'
+                        : 'bg-white/5 border-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Operations Staff
+                  </button>
+                </div>
+              </div>
+
+              {/* GreenGoal Sustainability Gamification */}
+              <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">GreenGoal™ Carbon Saved</span>
+                  <span className="text-xs font-black text-emerald-300">{userProfile.sustainabilityPoints} PTS</span>
+                </div>
+                <p className="text-[9px] text-emerald-100/70 leading-relaxed">
+                  Earn points by taking public transit (NJ Transit) or utilizing recycling hubs in sections F & K.
+                </p>
+                {userProfile.sustainabilityPoints === 0 && (
+                  <button
+                    onClick={() => updateUserProfile({ sustainabilityPoints: 50 })}
+                    className="w-full py-1 bg-emerald-500 hover:bg-emerald-600 text-[#0A0E27] font-black text-[9px] uppercase tracking-wider rounded transition-all active:scale-[0.98]"
+                  >
+                    Claim transit points (+50 pts)
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -174,7 +220,7 @@ export default function Settings(): React.JSX.Element {
             <h4 className="text-xs font-bold font-outfit uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
               <Shield className="w-4 h-4" aria-hidden="true" /> Physical Accessibility
             </h4>
-            <p className="text-[10px] text-white/40 leading-relaxed">
+            <p className="text-[10px] text-white/70 leading-relaxed">
               Enabling these preferences instructs the AI navigation engine to route you through step-free pathways, elevators, and low-traffic areas.
             </p>
 
@@ -199,7 +245,7 @@ export default function Settings(): React.JSX.Element {
                   >
                     <div>
                       <span className="font-bold text-xs text-white font-outfit block">{item.label}</span>
-                      <span className="text-[9px] text-white/40 block mt-0.5">{item.desc}</span>
+                      <span className="text-[9px] text-white/70 block mt-0.5">{item.desc}</span>
                     </div>
                     <div className={`w-8 h-4 rounded-full p-0.5 transition-all shrink-0 ${isSelected ? 'bg-cyan-500' : 'bg-slate-800'}`}>
                       <div className={`w-3 h-3 rounded-full bg-white transition-all ${isSelected ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -236,7 +282,7 @@ export default function Settings(): React.JSX.Element {
                   >
                     <div>
                       <span className="font-bold text-xs text-white font-outfit block">{item.label}</span>
-                      <span className="text-[9px] text-white/40 block mt-0.5">{item.desc}</span>
+                      <span className="text-[9px] text-white/70 block mt-0.5">{item.desc}</span>
                     </div>
                     <div className={`w-8 h-4 rounded-full p-0.5 transition-all shrink-0 ${isSelected ? 'bg-cyan-500' : 'bg-slate-800'}`}>
                       <div className={`w-3 h-3 rounded-full bg-white transition-all ${isSelected ? 'translate-x-4' : 'translate-x-0'}`} />

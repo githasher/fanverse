@@ -53,7 +53,7 @@ function ProactiveAlert(): React.JSX.Element {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-3 w-[340px] md:w-[380px] pointer-events-none">
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-3 w-[340px] md:w-[380px] pointer-events-none" aria-live="polite">
       <AnimatePresence>
         {activeToasts.map((notif) => (
           <motion.div
@@ -67,7 +67,6 @@ function ProactiveAlert(): React.JSX.Element {
               notif.priority
             )}`}
             role="alert"
-            aria-live={notif.priority === 'critical' ? 'assertive' : 'polite'}
           >
             <div className="p-2 bg-white/5 rounded-lg border border-white/5 shrink-0">
               {getIcon(notif.type)}
@@ -78,7 +77,7 @@ function ProactiveAlert(): React.JSX.Element {
                 <span className="font-bold text-xs md:text-sm text-white font-outfit truncate">
                   {notif.title}
                 </span>
-                <span className="text-[9px] text-white/30 shrink-0 ml-2">
+                <span className="text-[9px] text-white/60 shrink-0 ml-2">
                   {new Date(notif.timestamp).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',

@@ -146,6 +146,7 @@ export interface UserProfile {
   ticket: TicketInfo | null;
   currentLocation: GeoCoordinate | null;
   matchDayPhase: MatchDayPhase;
+  sustainabilityPoints: number;
 }
 
 // -----------------------------------------------------------------------------

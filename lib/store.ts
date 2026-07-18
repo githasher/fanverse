@@ -97,6 +97,7 @@ const DEFAULT_USER_PROFILE: UserProfile = {
   ticket: null,
   currentLocation: null,
   matchDayPhase: 'BEFORE_MATCH',
+  sustainabilityPoints: 0,
 };
 
 const DEFAULT_TIMELINE: TimelineEvent[] = [
@@ -230,7 +231,22 @@ export const useFanverseStore = create<FanverseStore>((set) => ({
 
   updateUserProfile: (partial) =>
     set((state) => ({
-      userProfile: { ...state.userProfile, ...partial },
+      userProfile: {
+        ...state.userProfile,
+        ...partial,
+        ...(partial.accessibility ? {
+          accessibility: {
+            ...state.userProfile.accessibility,
+            ...partial.accessibility,
+          }
+        } : {}),
+        ...(partial.preferences ? {
+          preferences: {
+            ...state.userProfile.preferences,
+            ...partial.preferences,
+          }
+        } : {}),
+      },
     })),
 
   setPhase: (phase) =>

@@ -3,6 +3,7 @@
 // Guards API route inputs against malformed, oversized, or malicious payloads
 // =============================================================================
 
+import sanitizeHtml from 'sanitize-html';
 import type { StadiumState, UserProfile } from '@/types';
 import {
   MAX_MESSAGE_LENGTH,
@@ -27,11 +28,10 @@ export interface ValidationResult {
  * @returns Sanitized string with HTML tags removed.
  */
 export function sanitizeInput(input: string): string {
-  return input
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<\/?[a-z][a-z0-9]*\b[^>]*>/gi, '')
-    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-    .trim();
+  return sanitizeHtml(input, {
+    allowedTags: [],
+    allowedAttributes: {},
+  }).trim();
 }
 
 /**

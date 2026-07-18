@@ -189,40 +189,54 @@ export default function ChatInterface() {
                     : 'bg-white/5 text-white border-white/10 rounded-tl-none'
                 }`}
               >
-                {/* Parse Markdown bold and bullet points manually for a neat layout */}
+                {/* Parse Markdown robustly for a premium layout */}
                 <div className="space-y-1 whitespace-pre-wrap">
-                  {msg.content.split('\n').map((line, lIdx) => {
-                    // Match bullet points starting with • or *
-                    if (line.trim().startsWith('•') || line.trim().startsWith('*')) {
-                      return (
-                        <div key={lIdx} className="flex items-start gap-1.5 ml-2">
-                          <span className={isUser ? 'text-[#0A0E27]/70' : 'text-cyan-400'}>•</span>
-                          <span>{line.substring(2)}</span>
-                        </div>
+                  {(() => {
+                    const parseLineContent = (text: string) => {
+                      const boldRegex = /\*\*(.*?)\*\*/g;
+                      const parts = text.split(boldRegex);
+                      return parts.map((part, pIdx) =>
+                        pIdx % 2 === 1 ? (
+                          <strong key={pIdx} className={isUser ? 'font-extrabold text-[#0A0E27]' : 'font-extrabold text-cyan-400'}>
+                            {part}
+                          </strong>
+                        ) : (
+                          part
+                        )
                       );
-                    }
-                    
-                    // Match bold markdown tags **text**
-                    const boldRegex = /\*\*(.*?)\*\*/g;
-                    const parts = line.split(boldRegex);
-                    if (parts.length > 1) {
-                      return (
-                        <div key={lIdx}>
-                          {parts.map((part, pIdx) =>
-                            pIdx % 2 === 1 ? (
-                              <strong key={pIdx} className="font-extrabold text-white">
-                                {part}
-                              </strong>
-                            ) : (
-                              part
-                            )
-                          )}
-                        </div>
-                      );
-                    }
+                    };
 
-                    return <p key={lIdx}>{line}</p>;
-                  })}
+                    return msg.content.split('\n').map((line, lIdx) => {
+                      const trimmed = line.trim();
+                      if (!trimmed) return <div key={lIdx} className="h-1" />;
+
+                      // Match bullet points starting with •, *, or -
+                      if (trimmed.startsWith('•') || trimmed.startsWith('*') || trimmed.startsWith('-')) {
+                        const contentText = trimmed.replace(/^[•*-]\s*/, '');
+                        // If bullet line had no content (e.g. just a bullet symbol), skip rendering empty space
+                        if (!contentText) return null;
+
+                        return (
+                          <div key={lIdx} className="flex items-start gap-1.5 ml-2 my-0.5">
+                            <span className={isUser ? 'text-[#0A0E27]/70' : 'text-cyan-400'}>•</span>
+                            <span className="flex-1">{parseLineContent(contentText)}</span>
+                          </div>
+                        );
+                      }
+
+                      // Match markdown headings
+                      if (trimmed.startsWith('#')) {
+                        const headingText = trimmed.replace(/^#+\s*/, '');
+                        return (
+                          <h4 key={lIdx} className="font-bold text-white font-outfit mt-3 mb-1 text-[11px] md:text-xs uppercase tracking-wider text-cyan-400 flex items-center gap-1">
+                            {parseLineContent(headingText)}
+                          </h4>
+                        );
+                      }
+
+                      return <p key={lIdx} className="my-0.5">{parseLineContent(trimmed)}</p>;
+                    });
+                  })()}
                 </div>
               </div>
             </div>

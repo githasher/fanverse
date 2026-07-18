@@ -14,7 +14,7 @@ import { getSensorySvgColor } from '@/lib/utils';
  *
  * @returns React.JSX.Element representing the interactive stadium layout.
  */
-export default function StadiumMap(): React.JSX.Element {
+const StadiumMap = React.memo(function StadiumMap(): React.JSX.Element {
   const stadiumState = useFanverseStore((state) => state.stadiumState);
   const userProfile = useFanverseStore((state) => state.userProfile);
 
@@ -288,4 +288,6 @@ export default function StadiumMap(): React.JSX.Element {
       </div>
     </div>
   );
-}
+});
+
+export default StadiumMap;

@@ -41,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${outfit.variable}`} data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className="bg-[#0A0E27] text-white antialiased min-h-screen overflow-x-hidden font-[family-name:var(--font-inter)]">
         <a
           href="#main-content"
