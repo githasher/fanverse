@@ -12,6 +12,10 @@
  */
 function requireEnv(key: string): string {
   const value = process.env[key];
+  // Skip strict validation during Next.js production build phase to prevent build failure
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return value || 'BUILD_TIME_PLACEHOLDER';
+  }
   if (!value || value.trim().length === 0) {
     throw new Error(
       `Missing required environment variable: ${key}. ` +
