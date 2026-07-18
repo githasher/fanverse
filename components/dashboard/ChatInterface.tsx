@@ -117,13 +117,7 @@ export default function ChatInterface() {
       setIsTyping(true);
 
       try {
-        // Map Zustand chat history to Gemini API format
-        const history = chatMessages
-          .slice(-6) // Send last 6 messages to keep context window small
-          .map((msg) => ({
-            role: msg.role === 'user' ? ('user' as const) : ('model' as const),
-            parts: [{ text: msg.content }],
-          }));
+        const history = chatMessages.slice(-6); // Send last 6 messages to keep context window small
 
         const res = await fetch('/api/chat', {
           method: 'POST',

@@ -215,10 +215,23 @@ ${contextSummary}
 Respond helpfully and concisely in the user's preferred language. Use the live data above to give specific, actionable advice.`;
 
   // Format history messages to match content objects format if they don't already
-  const formattedHistory = history.map((msg: ChatMessage) => ({
-    role: msg.role === 'user' ? 'user' : 'model',
-    parts: [{ text: msg.content }],
-  }));
+  const formattedHistory = history.map((msg: ChatMessage) => {
+    const role = msg.role === 'user' ? 'user' : 'model';
+    
+    // Support pre-formatted inputs from client payload if structure matches
+    const rawMsg = msg as unknown as { parts?: Array<{ text?: string }> };
+    if (rawMsg.parts && Array.isArray(rawMsg.parts)) {
+      return {
+        role,
+        parts: rawMsg.parts.map((p) => ({ text: p.text || '' })),
+      };
+    }
+    
+    return {
+      role,
+      parts: [{ text: msg.content || '' }],
+    };
+  });
 
   const response = await client.models.generateContent({
     model: MODEL_ID,
